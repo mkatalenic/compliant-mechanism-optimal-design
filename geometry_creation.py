@@ -117,8 +117,8 @@ class Mesh():
                                   np.array(poly_points)[0].reshape(1, 2),
                                   axis=0)
         if only_main_nodes:
-            used_array = mdf.node_array[mdf.main_node_array]
-            contained_node_id = mdf.main_node_array
+            used_array = mdf.node_array[mdf.main_nodes]
+            contained_node_id = mdf.main_nodes
         else:
             used_array = mdf.node_array
             contained_node_id = np.arange(np.shape(used_array)[0])
@@ -208,7 +208,7 @@ class Mesh():
 
         mdf.beam_array = np.append(
             mdf.beam_array,
-            [f_node, l_node, no_nodes_per_beam],
+            [[f_node, l_node, no_nodes_per_beam]],
             axis=0
         )
 
@@ -373,10 +373,93 @@ class Mesh():
         length_array = np.empty((0), dtype=np.float64)
 
         for beam in mdf.beam_array:
-            dx, dy = list(mdf.node_array[beam[0]],
-                          mdf.node_array[beam[1]])
+            dx, dy = (mdf.node_array[beam[0]] -
+                      mdf.node_array[beam[1]])
             length = np.sqrt(dx**2 + dy**2)
             length_array = np.append(length_array, length)
         mdf.mechanism_area = np.sum(length_array * mdf.beam_width_array)
 
         return True  # Width assign terminated successfully
+
+
+class SimpleMeshCreator(Mesh):
+
+    '''
+    A simple, automated mesh creaton based on given:
+    - x dimension
+    - y dimension
+    - number of divisions (x_div, y_div)
+    - support definitions
+    '''
+
+    def __init__(self,
+                 _material,
+                 _max_element_size,
+                 length: float,
+                 heigth: float,
+                 divisions: tuple,
+                 support_definition: str = None):
+
+        super().__init__(_material, _max_element_size)
+
+        '''
+        Initialization
+        '''
+
+        for vert_coord in np.linspace(0,
+                                      heigth,
+                                      divisions[1] + 1,
+                                      endpoint=True):
+            for hor_coord in np.linspace(0,
+                                         length,
+                                         divisions[0] + 1,
+                                         endpoint=True):
+                self.create_node((hor_coord, vert_coord),
+                                 main_node=True)
+
+        for y_node in range(divisions[1] + 1):
+            for x_node in range(divisions[0] + 1):
+                current_node_id = x_node + y_node*(divisions[0] + 1)
+
+                if x_node < divisions[0]:
+                    self.create_beam(current_node_id,
+                                     current_node_id + 1)
+                if y_node < divisions[1]:
+                    self.create_beam(current_node_id,
+                                     current_node_id + (divisions[0] + 1))
+
+                if support_definition == 'fd' \
+                   and y_node < divisions[1] \
+                   and x_node < divisions[0]:
+                    self.create_beam(current_node_id,
+                                     current_node_id + 1 + (divisions[0] + 1))
+
+                if support_definition == 'bd' \
+                   and y_node < divisions[1] \
+                   and x_node > 0:
+                    self.create_beam(current_node_id,
+                                     current_node_id - 1 + (divisions[0] + 1))
+
+                if support_definition == 'x' \
+                   and y_node < divisions[1] \
+                   and x_node < divisions[0]:
+                    self.create_node(
+                        np.average(
+                            self.node_array[
+                                [current_node_id,
+                                 current_node_id + 1 + (divisions[0] + 1)], :],
+                            axis=0
+                        ),
+                        main_node=True
+                    )
+
+                    created_mid_node_index = np.shape(self.node_array)[0] - 1
+
+                    self.create_beam(current_node_id,
+                                     created_mid_node_index)
+                    self.create_beam(created_mid_node_index,
+                                     current_node_id + 1 + (divisions[0] + 1))
+                    self.create_beam(current_node_id + (divisions[0] + 1),
+                                     created_mid_node_index)
+                    self.create_beam(created_mid_node_index,
+                                     current_node_id + 1)
