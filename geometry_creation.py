@@ -319,3 +319,64 @@ class Mesh():
         )
 
         mdf._set_unremovable(node_idx)
+
+    '''
+    WIDTH DEFINITION
+    '''
+
+    minimal_beam_width: float
+    beam_height: float
+
+    mechanism_area: float
+
+    beam_width_array = np.empty(shape=(0),
+                                dtype=np.float64)
+
+    def set_width_array(mdf,
+                        input_width):
+        '''
+        Sets mesh beam widths
+        '''
+        remove_beams = mdf.beam_array[input_width < mdf.minimal_beam_width]
+
+        remove_nodes = np.empty((0),
+                                dtype=np.int32)
+
+        for i, beam in enumerate(mdf.beam_array):
+            if beam in remove_beams:
+                remove_nodes = np.append(
+                    remove_nodes,
+                    beam[:-1]
+                )
+                mid_nodes = mdf.beam_mid_nodes_array[
+                    np.sum(mdf.beam_array[-1, :i]):
+                    np.sum(mdf.beam_array[-1, :i + beam[-1]])
+                ]
+                remove_nodes = np.append(
+                    remove_nodes,
+                    mid_nodes
+                )
+
+        remove_nodes = np.unique(remove_nodes)
+
+        if np.size(
+                np.intersect1d(
+                    remove_nodes,
+                    mdf.non_removable_nodes
+                )
+        ) != 0:
+            return False  # Width assign terminated unsucessfully
+
+        mdf.beam_width_array = input_width
+        mdf.beam_width_array[input_width < mdf.minimal_beam_width] = 0
+
+        length_array = np.empty((0), dtype=np.float64)
+
+        for beam in mdf.beam_array:
+            dx, dy = list(mdf.node_array[beam[0]],
+                          mdf.node_array[beam[1]])
+            length = np.sqrt(dx**2 + dy**2)
+            length_array = np.append(length_array, length)
+        mdf.mechanism_area = np.sum(length_array * mdf.beam_width_array)
+
+        return True  # Width assign terminated successfully
