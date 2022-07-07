@@ -283,8 +283,6 @@ class Mesh():
         '''
 
         node_idx = mdf._near_node_index(node)
-        print(node)
-        print(node_idx)
 
         mdf.boundary_array = np.append(
             mdf.boundary_array,
@@ -331,7 +329,8 @@ class Mesh():
 
         mdf.initial_displacement_array = np.append(
             mdf.initial_displacement_array,
-            np.array(node_idx, displacement_vector[0], displacement_vector[1]),
+            np.array([[node_idx, displacement_vector[0],
+                       displacement_vector[1]]]),
             axis=0
         )
 
@@ -489,9 +488,6 @@ class SimpleMeshCreator(Mesh):
                     )
 
                     created_mid_node_index = np.shape(self.node_array)[0] - 1
-
-                    # print(f'connecting nodes: {self.node_array[current_node_id]}, {self.node_array[current_node_id + 1 + (divisions[0] + 1)]}')
-                    # print(f'mid node:{created_mid_node_index}, coords:{self.node_array[created_mid_node_index]}')
 
                     self.create_beam(current_node_id,
                                      created_mid_node_index)
