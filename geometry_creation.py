@@ -88,16 +88,24 @@ class Mesh():
         '''Near node coordinates to node index'''
 
         if type(node_def) == tuple:
-            for idx, node in enumerate(
-                    np.isclose(
-                        mdf.node_array,
-                        node_def
-                    )
-            ):
-                if np.alltrue(node):
-                    return idx
+            used_array = mdf.node_array
 
-        elif type(node_def) == int:
+            closest_node_index = np.argmin(
+                np.sqrt(
+                    np.sum(
+                        np.square(
+                            used_array
+                            - np.repeat(np.array(node_def).reshape((1, 2)),
+                                        np.shape(used_array)[0],
+                                        axis=0)
+                        ), axis=1
+                    )
+                ), axis=0
+            )
+
+            return closest_node_index
+
+        else:
             return node_def
 
     def node_laso(mdf,
@@ -221,12 +229,37 @@ class Mesh():
 
             mdf.create_node(new_node)
 
-            current_node_index = int(np.shape(mdf.node_array)[0])
+            current_node_index = int(np.shape(mdf.node_array)[0] - 1)
 
             mdf.beam_mid_nodes_array = np.append(
                 mdf.beam_mid_nodes_array,
                 current_node_index
             )
+
+    def _fetch_beam_nodes(mdf,
+                          beam_to_fetch) -> np.ndarray:
+        '''
+        Fetches beam midnodes and outputs them
+        together with the first and last node
+        '''
+
+        out_nodes = mdf.beam_array[beam_to_fetch][:-1]
+
+        for i, beam in enumerate(mdf.beam_array):
+            if i == beam_to_fetch:
+
+                mid_nodes = mdf.beam_mid_nodes_array[
+                    np.sum(mdf.beam_array[:i, -1]):
+                    np.sum(mdf.beam_array[:i, -1]) + beam[-1]
+                ]
+
+                out_nodes = np.insert(
+                    out_nodes,
+                    1,
+                    mid_nodes
+                )
+
+        return out_nodes
 
     '''
          _   _       _ _
@@ -250,6 +283,8 @@ class Mesh():
         '''
 
         node_idx = mdf._near_node_index(node)
+        print(node)
+        print(node_idx)
 
         mdf.boundary_array = np.append(
             mdf.boundary_array,
@@ -260,7 +295,7 @@ class Mesh():
             axis=0
         )
 
-        if set_unremovable & node_idx not in mdf.non_removable_nodes:
+        if set_unremovable and node_idx not in mdf.non_removable_nodes:
             mdf._set_unremovable(node_idx)
 
     force_array = np.empty((0, 3),
@@ -349,8 +384,8 @@ class Mesh():
                     beam[:-1]
                 )
                 mid_nodes = mdf.beam_mid_nodes_array[
-                    np.sum(mdf.beam_array[-1, :i]):
-                    np.sum(mdf.beam_array[-1, :i + beam[-1]])
+                    np.sum(mdf.beam_array[:i, -1]):
+                    np.sum(mdf.beam_array[:i, -1]) + beam[-1]
                 ]
                 remove_nodes = np.append(
                     remove_nodes,
@@ -454,6 +489,9 @@ class SimpleMeshCreator(Mesh):
                     )
 
                     created_mid_node_index = np.shape(self.node_array)[0] - 1
+
+                    # print(f'connecting nodes: {self.node_array[current_node_id]}, {self.node_array[current_node_id + 1 + (divisions[0] + 1)]}')
+                    # print(f'mid node:{created_mid_node_index}, coords:{self.node_array[created_mid_node_index]}')
 
                     self.create_beam(current_node_id,
                                      created_mid_node_index)
