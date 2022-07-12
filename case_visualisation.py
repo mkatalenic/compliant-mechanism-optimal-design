@@ -125,7 +125,6 @@ class draw_mesh():
 
         # Plot initial displacement
         for init_disp in self.used_mesh.initial_displacement_array:
-            print(init_disp)
             self.my_ax.arrow(all_nodes_coordinates[int(init_disp[0])][0],
                              all_nodes_coordinates[int(init_disp[0])][1],
                              init_disp[1],

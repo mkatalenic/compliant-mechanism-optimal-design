@@ -216,14 +216,14 @@ class Mesh():
 
         mdf.beam_array = np.append(
             mdf.beam_array,
-            [[f_node, l_node, no_nodes_per_beam]],
+            [[f_node, l_node, no_nodes_per_beam*2 - 1]],
             axis=0
         )
 
         for new_node in np.linspace(
                 mdf.node_array[first_node],
                 mdf.node_array[last_node],
-                no_nodes_per_beam + 1,
+                no_nodes_per_beam*2,
                 False
         )[1:]:
 
