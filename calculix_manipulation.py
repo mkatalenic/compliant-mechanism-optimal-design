@@ -7,20 +7,49 @@
  >=>       >=>  >>  >=>
    >==>    >==>  >>  >=>
 '''
+import os
+import re
+
 import numpy as np
 
 import geometry_creation as gc
+
+
+def ccx_output_string_formatter(output_string: str):
+
+    '''
+    Formats native .frd data to useful data
+    '''
+
+    exponentials = re.split('E', output_string)[1:]
+    output_numbers = re.split('E...', output_string)[:-1]
+
+    output_numbers = [float(num) * 10**float(exp[:3])
+                      for num, exp in zip(output_numbers, exponentials)]
+
+    return output_numbers
 
 
 class calculix_manipulator():
 
     def __init__(cm,
                  used_mesh: gc.Mesh,
-                 nonlin: bool = True):
+                 nonlin: bool = True,
+                 create_calculix_directory: bool = True):
 
         cm.used_mesh = used_mesh
 
         cm.nonlinear_calculation = nonlin
+
+        cm.ccx_directory = create_calculix_directory
+
+        if create_calculix_directory and not os.path.exists(
+                os.path.join(
+                    os.getcwd(),
+                    'ccx_files'
+                )
+        ):
+            os.mkdir(os.path.join(os.getcwd(), 'ccx_files'))
 
     def translate_mesh(cm):
 
@@ -158,3 +187,88 @@ class calculix_manipulator():
         output_string += '*end step'
 
         return output_string
+
+    def write_to_input_file(cm,
+                            ccx_case_name: str) -> str:
+
+        if cm.ccx_directory:
+            solver_path = os.path.join(os.getcwd(),
+                                       'ccx_files',
+                                       ccx_case_name)
+            os.mkdir(solver_path)
+
+        else:
+            solver_path = os.path.join(os.getcwd(),
+                                       ccx_case_name)
+
+        with open(os.path.join(solver_path, f'{ccx_case_name}.inp'),
+                  'w') as input_file:
+            input_file.writelines(cm.translate_mesh())
+
+        return solver_path
+
+    def read_results(cm,
+                     ccx_case_path: str):
+
+        with open(
+                os.path.join(
+                    ccx_case_path,
+                    f'{ccx_case_path}.frd'
+                ),
+                'r'
+        ) as results_file:
+
+            displacement_list = []
+            stress_list = []
+
+            displacement_array = np.empty(shape=(0, 3),
+                                          dtype=np.float64)
+            stress_array = np.empty(shape=(0, 6),
+                                    dtype=np.float64)
+
+            displacement_section = False
+            stress_section = False
+
+            for line in results_file:
+
+                if line[5:].startswith('DISP'):
+                    displacement_section = True
+
+                if line[5:].startswith('STRESS'):
+                    stress_section = True
+
+                if line.startswith(' -3'):
+                    displacement_section = False
+                    stress_section = False
+
+                if displacement_section:
+                    displacement_list.append(
+                        ccx_output_string_formatter(
+                            line.strip()[12:]
+                        )
+                    )
+
+            if stress_section:
+                stress_list.append(
+                    ccx_output_string_formatter(
+                        line.strip()[12:]
+                    )
+                )
+
+        for node in displacement_list:
+            if len(node) > 0:
+                displacement_array = np.append(
+                    displacement_array,
+                    np.reshape(np.array(node), (1, 3)),
+                    axis=0
+                )
+
+        for node in stress_list:
+            if len(node) > 0:
+                stress_array = np.append(
+                    stress_array,
+                    np.reshape(np.array(node), (1, 6)),
+                    axis=0
+                )
+
+        return displacement_array[:, :-1], stress_array

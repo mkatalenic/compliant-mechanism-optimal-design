@@ -113,7 +113,7 @@ class draw_mesh():
                              - dx,
                              - dy,
                              width=0.05,
-                             head_width=0.3,
+                             head_width=0.1,
                              length_includes_head=True,
                              color='red')
             self.my_ax.text(all_nodes_coordinates[int(force[0])][0] + dx,
