@@ -9,6 +9,8 @@
 '''
 import os
 import re
+import subprocess
+from shutil import rmtree
 
 import numpy as np
 
@@ -53,21 +55,23 @@ class calculix_manipulator():
 
     def translate_mesh(cm):
 
+        output_string = ''
+
         beams_to_write = cm.used_mesh.beam_array[
-            cm.used_mesh.beam_width_array != 0
+            [width > 0 for width in cm.used_mesh.beam_width_array]
         ]
 
         nodes_to_write = np.empty((0), dtype=np.int32)
         for idx, beam in enumerate(cm.used_mesh.beam_array):
-            if beam in beams_to_write:
-                nodes_to_write = np.append(
-                    nodes_to_write,
-                    cm.used_mesh._fetch_beam_nodes(idx)
-                )
+            for beam_to_write in beams_to_write:
+                if beam[0] == beam_to_write[0] and beam[1] == beam_to_write[1]:
+                    nodes_to_write = np.append(
+                        nodes_to_write,
+                        cm.used_mesh._fetch_beam_nodes(idx)
+                    )
+
         nodes_to_write = np.unique(nodes_to_write)
         nodes_idx_to_write = nodes_to_write + 1
-
-        output_string = ''
 
         # Node translator
         output_string += '*node, nset=nall\n'
@@ -84,37 +88,38 @@ class calculix_manipulator():
         written_beam_index = 0
         element_index = 0
         for idx, beam in enumerate(cm.used_mesh.beam_array):
-            if beam in beams_to_write:
-                written_beam_index += 1
-                elset_name = f'b_{written_beam_index}'
-                elset_name_list.append(elset_name)
+            for beam_to_write in beams_to_write:
+                if beam[0] == beam_to_write[0] and beam[1] == beam_to_write[1]:
+                    written_beam_index += 1
+                    elset_name = f'b_{written_beam_index}'
+                    elset_name_list.append(elset_name)
 
-                output_string += f'*element, type=b32, elset={elset_name}\n'
+                    output_string += f'*element,type=b32,elset={elset_name}\n'
 
-                beam_elements = np.reshape(
-                    cm.used_mesh._fetch_beam_nodes(idx)[:-1],
-                    (-1, 2)
-                )
-                beam_elements = np.append(
-                    beam_elements,
-                    np.reshape(
-                        np.append(
-                            beam_elements[1:, 0],
-                            cm.used_mesh._fetch_beam_nodes(idx)[-1]
+                    beam_elements = np.reshape(
+                        cm.used_mesh._fetch_beam_nodes(idx)[:-1],
+                        (-1, 2)
+                    )
+                    beam_elements = np.append(
+                        beam_elements,
+                        np.reshape(
+                            np.append(
+                                beam_elements[1:, 0],
+                                cm.used_mesh._fetch_beam_nodes(idx)[-1]
+                            ),
+                            (-1, 1)
                         ),
-                        (-1, 1)
-                    ),
-                    axis=1
-                )
-                beam_elements += 1
+                        axis=1
+                    )
+                    beam_elements += 1
 
-                for element in beam_elements:
-                    element_index += 1
-                    nodes_per_el_str = np.array2string(
-                        element,
-                        separator=','
-                    )[1:-1]
-                    output_string += f'{element_index}, {nodes_per_el_str}\n'
+                    for element in beam_elements:
+                        element_index += 1
+                        nodes_per_el_str = np.array2string(
+                            element,
+                            separator=','
+                        )[1:-1]
+                        output_string += f'{element_index}, {nodes_per_el_str}\n'
 
         output_string += '*elset, elset=elall\n'
         for name in elset_name_list:
@@ -127,7 +132,7 @@ class calculix_manipulator():
 
         # Beam width writer
         widths_to_write = cm.used_mesh.beam_width_array[
-            cm.used_mesh.beam_width_array != 0
+            [width > 0 for width in cm.used_mesh.beam_width_array]
         ]
         for element_set_name, width in zip(elset_name_list, widths_to_write):
             output_string += f'*beam section, elset={element_set_name},'
@@ -213,7 +218,7 @@ class calculix_manipulator():
         with open(
                 os.path.join(
                     ccx_case_path,
-                    f'{ccx_case_path}.frd'
+                    f'{os.path.split(ccx_case_path)[-1]}.frd'
                 ),
                 'r'
         ) as results_file:
@@ -272,3 +277,32 @@ class calculix_manipulator():
                 )
 
         return displacement_array[:, :-1], stress_array
+
+    def run_ccx(cm,
+                ccx_case_name: str,
+                delete_after_completion: bool = False):
+
+        # Bura ccx
+        # ccx_name = 'ccx_2.19'
+
+        # Home ccx
+        ccx_name = 'ccx'
+
+        ccx_file_path = cm.write_to_input_file(ccx_case_name)
+
+        with subprocess.Popen([ccx_name, ccx_case_name],
+                              cwd=ccx_file_path,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE) as process:
+            out, err = process.communicate()
+
+        for line in str(out).replace('\\n', '\n').split('\n'):
+            if line.startswith(' *ERROR') or len(err) != 0:
+                return False  # U slučaju propale analize
+
+        results = cm.read_results(ccx_file_path)
+
+        if delete_after_completion:
+            rmtree(ccx_file_path)
+
+        return results  # U slučaju uspješne analize
