@@ -13,6 +13,7 @@ TODO prikaz deformirane
 TODO prikaz naprezanja
 TODO prikaz funkcije cilja
 '''
+import os
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -54,7 +55,7 @@ class data_linewidth_plot():
 
 class draw_mesh():
 
-    # plt.style.use('dark_background')
+    plt.style.use('dark_background')
     plt.style.use('fast')
     my_figure = plt.figure()
     my_ax = my_figure.add_subplot(1, 1, 1)
@@ -76,7 +77,9 @@ class draw_mesh():
         self._is_from_object = False
         pass
 
-    def make_drawing(self):
+    def make_drawing(self,
+                     displacement=None,
+                     displacement_scale=1):
         x_lim_10_perc = (np.max(self.used_mesh.node_array[:, 0]) -
                          np.min(self.used_mesh.node_array[:, 0])) * 0.1
         y_lim_10_perc = (np.max(self.used_mesh.node_array[:, 1]) -
@@ -108,6 +111,11 @@ class draw_mesh():
 
         all_nodes_coordinates = self.used_mesh.node_array
 
+        if displacement is None:
+            displacement = np.zeros((np.size(used_nodes), 2))
+
+        all_nodes_coordinates[used_nodes] += displacement * displacement_scale
+
         # Plot beams
         for beam, width in zip(used_beams,
                                self.used_mesh.beam_width_array[used_beams]):
@@ -121,6 +129,8 @@ class draw_mesh():
                                 color='purple',
                                 zorder=1)
 
+            # plots beam names on beams
+            '''
             self.my_ax.text(
                 (
                     all_nodes_coordinates[nodes_per_beam[0]][0]
@@ -137,6 +147,7 @@ class draw_mesh():
                 fontsize='small',
                 horizontalalignment='center'
             )
+            '''
 
         # Plot nodes and boundaries
         for node in np.intersect1d(self.used_mesh.main_nodes, used_nodes):
@@ -195,3 +206,28 @@ class draw_mesh():
                              head_width=0.3,
                              color='red',
                              zorder=0)
+
+    def save_drawing(self,
+                     name: str):
+
+        if not os.path.exists(
+                os.path.join(
+                    os.getcwd(),
+                    'img'
+                )
+        ):
+            os.mkdir(
+                os.path.join(
+                    os.getcwd(),
+                    'img'
+                )
+            )
+
+        self.my_figure.savefig(
+            os.path.join(
+                os.getcwd(),
+                'img',
+                f'{name}.jpg'
+            ),
+            dpi=300,
+            bbox_inches='tight')

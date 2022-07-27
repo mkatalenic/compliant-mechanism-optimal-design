@@ -348,7 +348,9 @@ class Mesh():
 
         mdf.final_displacement_array = np.append(
             mdf.final_displacement_array,
-            np.array(node_idx, displacement_vector[0], displacement_vector[1]),
+            np.array([[node_idx,
+                       displacement_vector[0],
+                       displacement_vector[1]]]),
             axis=0
         )
 
@@ -404,6 +406,10 @@ class Mesh():
         mdf.beam_width_array = input_width
         mdf.beam_width_array[input_width < mdf.minimal_beam_width] = 0
 
+        return True  # Width assign terminated successfully
+
+    def calculate_mechanism_area(mdf):
+
         length_array = np.empty((0), dtype=np.float64)
 
         for beam in mdf.beam_array:
@@ -413,7 +419,7 @@ class Mesh():
             length_array = np.append(length_array, length)
         mdf.mechanism_area = np.sum(length_array * mdf.beam_width_array)
 
-        return True  # Width assign terminated successfully
+        return mdf.mechanism_area
 
 
 class SimpleMeshCreator(Mesh):

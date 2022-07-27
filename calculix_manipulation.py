@@ -53,6 +53,9 @@ class calculix_manipulator():
         ):
             os.mkdir(os.path.join(os.getcwd(), 'ccx_files'))
 
+    final_diplacement_node_positions = np.empty(shape=(0),
+                                                dtype=int)
+
     def translate_mesh(cm):
 
         output_string = ''
@@ -72,15 +75,24 @@ class calculix_manipulator():
 
         nodes_to_write = np.unique(nodes_to_write)
         nodes_idx_to_write = nodes_to_write + 1
+        cm._no_of_used_nodes = np.size(nodes_to_write)
 
         # Node translator
         output_string += '*node, nset=nall\n'
+        node_counter = 0
         for string in [
             f'{i}, {np.array2string(row, separator=",")[1:-1]}\n'
             for i, row in zip(nodes_idx_to_write,
                               cm.used_mesh.node_array[nodes_to_write]
                               )
         ]:
+            node_counter += 1
+            for node, _, _ in cm.used_mesh.final_displacement_array:
+                if node + 1 == int(string.split(',')[0]) and node_counter not in cm.final_diplacement_node_positions:
+                    cm.final_diplacement_node_positions = np.append(
+                        cm.final_diplacement_node_positions,
+                        node_counter
+                    )
             output_string += string
 
         # Beam translator
@@ -235,6 +247,8 @@ class calculix_manipulator():
             stress_section = False
 
             for line in results_file:
+                if line.startswith('    1C'):
+                    next
 
                 if line[5:].startswith('DISP'):
                     displacement_section = True
@@ -253,12 +267,15 @@ class calculix_manipulator():
                         )
                     )
 
-            if stress_section:
-                stress_list.append(
-                    ccx_output_string_formatter(
-                        line.strip()[12:]
+                if stress_section:
+                    stress_list.append(
+                        ccx_output_string_formatter(
+                            line.strip()[12:]
+                        )
                     )
-                )
+
+        if len(displacement_list) == 0 or len(stress_list) == 0:
+            return False
 
         for node in displacement_list:
             if len(node) > 0:
@@ -276,7 +293,8 @@ class calculix_manipulator():
                     axis=0
                 )
 
-        return displacement_array[:, :-1], stress_array
+        return (displacement_array[:, :-1][-cm._no_of_used_nodes:],
+                stress_array[-cm._no_of_used_nodes:])
 
     def run_ccx(cm,
                 ccx_case_name: str,
@@ -301,6 +319,8 @@ class calculix_manipulator():
                 return False  # U slučaju propale analize
 
         results = cm.read_results(ccx_file_path)
+        if results is False:
+            return False
 
         if delete_after_completion:
             rmtree(ccx_file_path)
