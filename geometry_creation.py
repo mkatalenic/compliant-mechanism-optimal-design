@@ -12,6 +12,8 @@ MESH DESIGN FRAMEWORK
 '''
 
 import numpy as np
+import os
+import pickle
 
 
 class Mesh():
@@ -26,16 +28,16 @@ class Mesh():
         => simple automated mesh creator
     '''
 
-    def __init__(mdf,
+    def __init__(self,
                  material: tuple,
                  max_finite_element_size: float):
         '''
         Mesh initialization
         '''
 
-        mdf.material = material  # (E, Poasson)
+        self.material = material  # (E, Poasson)
 
-        mdf.max_element_size = max_finite_element_size
+        self.max_element_size = max_finite_element_size
 
     '''
     NODE DEFINITIONS
@@ -45,37 +47,37 @@ class Mesh():
     non_removable_nodes = np.empty(0, dtype=np.int32)
     main_nodes = np.empty(0, dtype=np.int32)
 
-    def create_node(mdf,
+    def create_node(self,
                     coordinates: tuple,
                     main_node: bool = False,
                     removable: bool = True):
 
-        current_node_index = int(np.shape(mdf.node_array)[0])
+        current_node_index = int(np.shape(self.node_array)[0])
 
-        mdf.node_array = np.append(
-            mdf.node_array,
+        self.node_array = np.append(
+            self.node_array,
             np.reshape(coordinates, (1, 2)),
             axis=0
         )
 
         if not removable:
-            mdf.non_removable_nodes = np.append(
-                mdf.non_removable_nodes,
+            self.non_removable_nodes = np.append(
+                self.non_removable_nodes,
                 current_node_index
             )
 
         if main_node:
-            mdf.main_nodes = np.append(
-                mdf.main_nodes,
+            self.main_nodes = np.append(
+                self.main_nodes,
                 current_node_index
             )
 
-    def _set_unremovable(mdf,
+    def _set_unremovable(self,
                          node):
         '''Sets node as non removable'''
 
-        mdf.non_removable_nodes = np.append(
-            mdf.non_removable_nodes,
+        self.non_removable_nodes = np.append(
+            self.non_removable_nodes,
             node
         )
 
@@ -83,12 +85,12 @@ class Mesh():
     NODE FETCHING
     '''
 
-    def _near_node_index(mdf,
+    def _near_node_index(self,
                          node_def):
         '''Near node coordinates to node index'''
 
         if type(node_def) == tuple:
-            used_array = mdf.node_array
+            used_array = self.node_array
 
             closest_node_index = np.argmin(
                 np.sqrt(
@@ -108,7 +110,7 @@ class Mesh():
         else:
             return node_def
 
-    def node_laso(mdf,
+    def node_laso(self,
                   poly_points: list[tuple],
                   only_main_nodes: bool = True):
         '''
@@ -125,10 +127,10 @@ class Mesh():
                                   np.array(poly_points)[0].reshape(1, 2),
                                   axis=0)
         if only_main_nodes:
-            used_array = mdf.node_array[mdf.main_nodes]
-            contained_node_id = mdf.main_nodes
+            used_array = self.node_array[self.main_nodes]
+            contained_node_id = self.main_nodes
         else:
-            used_array = mdf.node_array
+            used_array = self.node_array
             contained_node_id = np.arange(np.shape(used_array)[0])
 
         def boundary_intersection(point_of_interest: tuple,
@@ -198,59 +200,59 @@ class Mesh():
     beam_mid_nodes_array = np.empty((0),
                                     dtype=np.int32)
 
-    def create_beam(mdf,
+    def create_beam(self,
                     first_node,
                     last_node):
         '''Creates a beam '''
 
-        f_node = mdf._near_node_index(first_node)
-        l_node = mdf._near_node_index(last_node)
+        f_node = self._near_node_index(first_node)
+        l_node = self._near_node_index(last_node)
 
         beam_size = np.sqrt(
             np.sum(
-                (mdf.node_array[f_node] - mdf.node_array[l_node])**2
+                (self.node_array[f_node] - self.node_array[l_node])**2
             )
         )
 
-        no_nodes_per_beam = int(beam_size / mdf.max_element_size)
+        no_nodes_per_beam = int(beam_size / self.max_element_size)
 
-        mdf.beam_array = np.append(
-            mdf.beam_array,
+        self.beam_array = np.append(
+            self.beam_array,
             [[f_node, l_node, no_nodes_per_beam*2 - 1]],
             axis=0
         )
 
         for new_node in np.linspace(
-                mdf.node_array[first_node],
-                mdf.node_array[last_node],
+                self.node_array[first_node],
+                self.node_array[last_node],
                 no_nodes_per_beam*2,
                 False
         )[1:]:
 
-            mdf.create_node(new_node)
+            self.create_node(new_node)
 
-            current_node_index = int(np.shape(mdf.node_array)[0] - 1)
+            current_node_index = int(np.shape(self.node_array)[0] - 1)
 
-            mdf.beam_mid_nodes_array = np.append(
-                mdf.beam_mid_nodes_array,
+            self.beam_mid_nodes_array = np.append(
+                self.beam_mid_nodes_array,
                 current_node_index
             )
 
-    def _fetch_beam_nodes(mdf,
+    def _fetch_beam_nodes(self,
                           beam_to_fetch) -> np.ndarray:
         '''
         Fetches beam midnodes and outputs them
         together with the first and last node
         '''
 
-        out_nodes = mdf.beam_array[beam_to_fetch][:-1]
+        out_nodes = self.beam_array[beam_to_fetch][:-1]
 
-        for i, beam in enumerate(mdf.beam_array):
+        for i, beam in enumerate(self.beam_array):
             if i == beam_to_fetch:
 
-                mid_nodes = mdf.beam_mid_nodes_array[
-                    np.sum(mdf.beam_array[:i, -1]):
-                    np.sum(mdf.beam_array[:i, -1]) + beam[-1]
+                mid_nodes = self.beam_mid_nodes_array[
+                    np.sum(self.beam_array[:i, -1]):
+                    np.sum(self.beam_array[:i, -1]) + beam[-1]
                 ]
 
                 out_nodes = np.insert(
@@ -271,7 +273,7 @@ class Mesh():
     boundary_array = np.empty((0, 4),
                               dtype=np.int32)
 
-    def create_boundary(mdf,
+    def create_boundary(self,
                         node,
                         bd_type: tuple[int],
                         set_unremovable: bool = False):
@@ -282,10 +284,10 @@ class Mesh():
         - 3 => z - rotation
         '''
 
-        node_idx = mdf._near_node_index(node)
+        node_idx = self._near_node_index(node)
 
-        mdf.boundary_array = np.append(
-            mdf.boundary_array,
+        self.boundary_array = np.append(
+            self.boundary_array,
             np.reshape(
                 np.append(node_idx, bd_type),
                 (1, 4)
@@ -293,21 +295,21 @@ class Mesh():
             axis=0
         )
 
-        if set_unremovable and node_idx not in mdf.non_removable_nodes:
-            mdf._set_unremovable(node_idx)
+        if set_unremovable and node_idx not in self.non_removable_nodes:
+            self._set_unremovable(node_idx)
 
     force_array = np.empty((0, 3),
                            dtype=np.float64)
 
-    def create_force(mdf,
+    def create_force(self,
                      node,
                      force_vector: tuple):
         '''Creates a force'''
 
-        node_idx = mdf._near_node_index(node)
+        node_idx = self._near_node_index(node)
 
-        mdf.force_array = np.append(
-            mdf.force_array,
+        self.force_array = np.append(
+            self.force_array,
             np.reshape(
                 np.append(node_idx, force_vector),
                 (1, 3)
@@ -315,46 +317,46 @@ class Mesh():
             axis=0
         )
 
-        mdf._set_unremovable(node_idx)
+        self._set_unremovable(node_idx)
 
     initial_displacement_array = np.empty((0, 3),
                                           dtype=np.float64)
 
-    def create_initial_displacement(mdf,
+    def create_initial_displacement(self,
                                     node,
                                     displacement_vector: tuple):
         "Creates initial displacement definition"
 
-        node_idx = mdf._near_node_index(node)
+        node_idx = self._near_node_index(node)
 
-        mdf.initial_displacement_array = np.append(
-            mdf.initial_displacement_array,
+        self.initial_displacement_array = np.append(
+            self.initial_displacement_array,
             np.array([[node_idx, displacement_vector[0],
                        displacement_vector[1]]]),
             axis=0
         )
 
-        mdf._set_unremovable(node_idx)
+        self._set_unremovable(node_idx)
 
     final_displacement_array = np.empty((0, 3),
                                         dtype=np.float64)
 
-    def set_final_displacement(mdf,
+    def set_final_displacement(self,
                                node,
                                displacement_vector: tuple):
         "Sets wanted displacement"
 
-        node_idx = mdf._near_node_index(node)
+        node_idx = self._near_node_index(node)
 
-        mdf.final_displacement_array = np.append(
-            mdf.final_displacement_array,
+        self.final_displacement_array = np.append(
+            self.final_displacement_array,
             np.array([[node_idx,
                        displacement_vector[0],
                        displacement_vector[1]]]),
             axis=0
         )
 
-        mdf._set_unremovable(node_idx)
+        self._set_unremovable(node_idx)
 
     '''
     WIDTH DEFINITION
@@ -363,30 +365,30 @@ class Mesh():
     minimal_beam_width: float
     beam_height: float
 
-    mechanism_area: float
+    mechanism_volume: float
 
     beam_width_array = np.empty(shape=(0),
                                 dtype=np.float64)
 
-    def set_width_array(mdf,
+    def set_width_array(self,
                         input_width):
         '''
         Sets mesh beam widths
         '''
-        remove_beams = mdf.beam_array[input_width < mdf.minimal_beam_width]
+        remove_beams = self.beam_array[input_width < self.minimal_beam_width]
 
         remove_nodes = np.empty((0),
                                 dtype=np.int32)
 
-        for i, beam in enumerate(mdf.beam_array):
+        for i, beam in enumerate(self.beam_array):
             if beam in remove_beams:
                 remove_nodes = np.append(
                     remove_nodes,
                     beam[:-1]
                 )
-                mid_nodes = mdf.beam_mid_nodes_array[
-                    np.sum(mdf.beam_array[:i, -1]):
-                    np.sum(mdf.beam_array[:i, -1]) + beam[-1]
+                mid_nodes = self.beam_mid_nodes_array[
+                    np.sum(self.beam_array[:i, -1]):
+                    np.sum(self.beam_array[:i, -1]) + beam[-1]
                 ]
                 remove_nodes = np.append(
                     remove_nodes,
@@ -398,28 +400,49 @@ class Mesh():
         if np.size(
                 np.intersect1d(
                     remove_nodes,
-                    mdf.non_removable_nodes
+                    self.non_removable_nodes
                 )
         ) != 0:
             return False  # Width assign terminated unsucessfully
 
-        mdf.beam_width_array = input_width
-        mdf.beam_width_array[input_width < mdf.minimal_beam_width] = 0
+        self.beam_width_array = input_width
+        self.beam_width_array[input_width < self.minimal_beam_width] = 0
 
         return True  # Width assign terminated successfully
 
-    def calculate_mechanism_area(mdf):
+    def calculate_mechanism_volume(self):
 
         length_array = np.empty((0), dtype=np.float64)
 
-        for beam in mdf.beam_array:
-            dx, dy = (mdf.node_array[beam[0]] -
-                      mdf.node_array[beam[1]])
+        for beam in self.beam_array:
+            dx, dy = (self.node_array[beam[0]] -
+                      self.node_array[beam[1]])
             length = np.sqrt(dx**2 + dy**2)
             length_array = np.append(length_array, length)
-        mdf.mechanism_area = np.sum(length_array * mdf.beam_width_array)
+        mechanism_area = np.sum(length_array * self.beam_width_array)
+        self.mechanism_volume = mechanism_area * self.beam_height
 
-        return mdf.mechanism_area
+        return self.mechanism_volume
+
+    def write_beginning_state(self):
+
+        '''Writes beginning state of the construction'''
+
+        with open(os.path.join(
+                os.getcwd(),
+                'mesh_setup.pkl'
+        ),
+                  'wb') as case_setup:
+            pickle.dump(self, case_setup, pickle.HIGHEST_PROTOCOL)
+
+
+def read_mesh_state():
+    with open(os.path.join(
+            os.getcwd(),
+            'mesh_setup.pkl'
+    ),
+                'rb') as case_setup:
+        return pickle.load(case_setup)
 
 
 class SimpleMeshCreator(Mesh):

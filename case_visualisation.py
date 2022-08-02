@@ -40,7 +40,7 @@ class data_linewidth_plot():
         self.cid = self.fig.canvas.mpl_connect('draw_event', self._resize)
 
     def _resize(self, event=None):
-        lw =  ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1]
+        lw = ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1]
         if lw != self.lw:
             self.line.set_linewidth(lw)
             self.lw = lw
@@ -53,11 +53,9 @@ class data_linewidth_plot():
         self.timer.start()
 
 
-class draw_mesh():
+class mesh_drawer():
 
-    plt.style.use('dark_background')
-    plt.style.use('fast')
-    my_figure = plt.figure()
+    my_figure = plt.figure(dpi=80, figsize=(16, 12))
     my_ax = my_figure.add_subplot(1, 1, 1)
     my_ax.set_aspect('equal')
 
@@ -69,13 +67,6 @@ class draw_mesh():
         self._is_from_object = True
 
         self.used_mesh = mesh
-
-    @classmethod
-    def from_file(self):
-        '''Mesh drawing setup from the given file structure'''
-
-        self._is_from_object = False
-        pass
 
     def make_drawing(self,
                      displacement=None,
@@ -109,12 +100,15 @@ class draw_mesh():
 
         used_nodes = np.unique(used_nodes)
 
-        all_nodes_coordinates = self.used_mesh.node_array
-
         if displacement is None:
             displacement = np.zeros((np.size(used_nodes), 2))
 
-        all_nodes_coordinates[used_nodes] += displacement * displacement_scale
+        all_nodes_coordinates = np.zeros_like(self.used_mesh.node_array)
+        print(self.used_mesh.node_array[31])
+        print(f'final node cord w/o disp: {all_nodes_coordinates[31]}')
+        all_nodes_coordinates[used_nodes] = displacement * displacement_scale
+        print(f'final node cord w disp: {all_nodes_coordinates[31]}')
+        all_nodes_coordinates += self.used_mesh.node_array
 
         # Plot beams
         for beam, width in zip(used_beams,
@@ -126,11 +120,10 @@ class draw_mesh():
                                 all_nodes_coordinates[nodes_per_beam][:, 1],
                                 ax=self.my_ax,
                                 linewidth=width,
-                                color='purple',
+                                color='black',
                                 zorder=1)
 
             # plots beam names on beams
-            '''
             self.my_ax.text(
                 (
                     all_nodes_coordinates[nodes_per_beam[0]][0]
@@ -143,11 +136,10 @@ class draw_mesh():
                     all_nodes_coordinates[nodes_per_beam[-1]][1]
                 ) / 2,
                 f'b_{beam}',
-                fontweight='black',
+                color='red',
                 fontsize='small',
                 horizontalalignment='center'
             )
-            '''
 
         # Plot nodes and boundaries
         for node in np.intersect1d(self.used_mesh.main_nodes, used_nodes):
@@ -189,6 +181,7 @@ class draw_mesh():
                              head_width=0.1,
                              length_includes_head=True,
                              color='red')
+
             self.my_ax.text(all_nodes_coordinates[int(force[0])][0] + dx,
                             all_nodes_coordinates[int(force[0])][1] + dy,
                             f'{resultant_force:.1E}N',
@@ -229,5 +222,5 @@ class draw_mesh():
                 'img',
                 f'{name}.jpg'
             ),
-            dpi=300,
+            dpi=100,
             bbox_inches='tight')

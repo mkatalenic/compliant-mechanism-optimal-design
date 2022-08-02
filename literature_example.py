@@ -21,7 +21,7 @@ example_mesh = gc.SimpleMeshCreator((160e3, 0.29),
                                     (6, 4),
                                     'x')
 
-example_mesh.minimal_beam_width = 1e-4 - 1e-5
+example_mesh.minimal_beam_width = 5e-5
 
 # example_mesh.beam_height = 0.053
 # example_mesh.beam_height = 53
@@ -66,6 +66,8 @@ example_mesh.set_final_displacement(
     (0, -0.29)
 )
 
+example_mesh.write_beginning_state()
+
 ccx_helper = cm.calculix_manipulator(example_mesh)
 
 from indago import PSO
@@ -81,37 +83,38 @@ def evaluation(all_widths, unique_str=None):
     ccx_results = ccx_helper.run_ccx(unique_str)
 
     if ccx_results is False:
-        return np.nan, np.nan, np.nan
+        return np.nan, np.nan, np.nan, np.nan
     else:
         (displacement, _) = ccx_results
         y_error = np.sum(
             (ccx_helper.used_mesh.final_displacement_array[:, 1:][:, 1] -
-             displacement[ccx_helper.final_diplacement_node_positions][:, 1])
-            ** 2,
+             displacement[ccx_helper.final_diplacement_node_positions][:, 1])**2,
             axis=0
         )
         x_error = abs(float(
             displacement[ccx_helper.final_diplacement_node_positions][:, 0]
         )) - 1e-6
-        mech_area = ccx_helper.used_mesh.calculate_mechanism_area()
+        mech_volume = ccx_helper.used_mesh.calculate_mechanism_volume()
 
-        return y_error, mech_area, x_error
+        max_y_error = abs(y_error) - 1e-3
+
+        return y_error, mech_volume, x_error, max_y_error
 
 
 optimizer = PSO()
 optimizer.dimensions = np.size(tanke) + 1
 optimizer.lb = np.ones((optimizer.dimensions)) * 1e-4
-optimizer.lb[0] = 5
+optimizer.lb[0] = 0.053
 optimizer.ub = np.ones((optimizer.dimensions)) * 5
 optimizer.ub[0] = 10
-optimizer.iterations = 500
+optimizer.iterations = 1000
 
 optimizer.evaluation_function = evaluation
 optimizer.objectives = 2
-optimizer.objective_labels = ['y_error', 'mechanism area']
+optimizer.objective_labels = ['y_error', 'mechanism volume']
 optimizer.objective_weights = [0.7, 0.3]
-optimizer.constraints = 1
-optimizer.constraint_labels = ['x_error']
+optimizer.constraints = 2
+optimizer.constraint_labels = ['x_error', 'max possible y_error']
 
 # optimizer.safe_evaluation = True
 
@@ -126,7 +129,7 @@ optimizer.forward_unique_str = True
 optimizer.monitoring = 'dashboard'
 
 test_dir = './ccx_files'
-drawing = cv.draw_mesh()
+drawing = cv.mesh_drawer()
 
 
 def post_iteration_processing(it, candidates, best):
@@ -151,11 +154,6 @@ def post_iteration_processing(it, candidates, best):
         # Remove the best from candidates
         # (since its directory is already renamed)
         candidates = np.delete(candidates, 0)
-
-        # crtanje i spremanje slike
-        # drawing.from_object(ccx_helper.used_mesh)
-        # drawing.make_drawing()
-        # drawing.save_drawing(f'{it}')
 
     # Remove candidates' directories
     for c in candidates:
