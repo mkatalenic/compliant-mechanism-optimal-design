@@ -17,47 +17,22 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.cm as cmx
+import matplotlib.collections as mcoll
 
 import geometry_creation as gc
-
-
-class data_linewidth_plot():
-    def __init__(self, x, y, **kwargs):
-        self.ax = kwargs.pop("ax", plt.gca())
-        self.fig = self.ax.get_figure()
-        self.lw_data = kwargs.pop("linewidth", 1)
-        self.lw = 1
-        self.fig.canvas.draw()
-
-        self.ppd = 72./self.fig.dpi
-        self.trans = self.ax.transData.transform
-        self.linehandle, = self.ax.plot([], [], **kwargs)
-        if "label" in kwargs:
-            kwargs.pop("label")
-        self.line, = self.ax.plot(x, y, **kwargs)
-        self.line.set_color(self.linehandle.get_color())
-        self._resize()
-        self.cid = self.fig.canvas.mpl_connect('draw_event', self._resize)
-
-    def _resize(self, event=None):
-        lw = ((self.trans((1, self.lw_data))-self.trans((0, 0)))*self.ppd)[1]
-        if lw != self.lw:
-            self.line.set_linewidth(lw)
-            self.lw = lw
-            self._redraw_later()
-
-    def _redraw_later(self):
-        self.timer = self.fig.canvas.new_timer(interval=10)
-        self.timer.single_shot = True
-        self.timer.add_callback(lambda: self.fig.canvas.draw_idle())
-        self.timer.start()
+import calculix_manipulation as cm
 
 
 class mesh_drawer():
 
-    my_figure = plt.figure(dpi=80, figsize=(16, 12))
-    my_ax = my_figure.add_subplot(1, 1, 1)
+    my_figure = plt.figure(dpi=400, figsize=(12, 6))
+    subfigs = my_figure.subfigures(1, 2, wspace=0.02, width_ratios=[2, 1])
+    my_ax = subfigs[0].add_subplot(1, 1, 1)
+    my_info_ax = subfigs[1].add_subplot(1, 1, 1)
     my_ax.set_aspect('equal')
+    make_drawing_counter = 0
 
     @classmethod
     def from_object(self,
@@ -69,12 +44,42 @@ class mesh_drawer():
         self.used_mesh = mesh
 
     def make_drawing(self,
+                     info_dict: dict,
                      displacement=None,
-                     displacement_scale=1):
+                     stress=None,
+                     stress_max_min=(None, None),
+                     displacement_scale=1,
+                     beam_names=False):
+
+        self.make_drawing_counter += 1
+
+        text_array = np.empty((0, 2),
+                              dtype=object)
+
+        for i, (key, value) in enumerate(info_dict.items()):
+            text_array = np.append(
+                text_array,
+                [[f'{key}', f'{value}']],
+                axis=0
+            )
+
+        cellcolours = [['plum', 'w'] for _ in range(np.shape(text_array)[0])]
+
+        info_table = self.my_info_ax.table(cellText=text_array,
+                                           loc='upper center',
+                                           cellColours=cellcolours,
+                                           edges='closed',
+                                           fontsize=14)
+
+        info_table.animated = True
+
+        self.my_ax.grid(False)
+
         x_lim_10_perc = (np.max(self.used_mesh.node_array[:, 0]) -
                          np.min(self.used_mesh.node_array[:, 0])) * 0.1
         y_lim_10_perc = (np.max(self.used_mesh.node_array[:, 1]) -
                          np.min(self.used_mesh.node_array[:, 1])) * 0.1
+
         self.my_ax.set_xlim([
             np.min(self.used_mesh.node_array[:, 0]) - x_lim_10_perc,
             np.max(self.used_mesh.node_array[:, 0]) + x_lim_10_perc
@@ -83,6 +88,7 @@ class mesh_drawer():
             np.min(self.used_mesh.node_array[:, 1]) - y_lim_10_perc,
             np.max(self.used_mesh.node_array[:, 1]) + y_lim_10_perc
         ])
+
         used_beams = np.array(
             [i for i, _ in enumerate(
                 self.used_mesh.beam_width_array
@@ -103,11 +109,34 @@ class mesh_drawer():
         if displacement is None:
             displacement = np.zeros((np.size(used_nodes), 2))
 
+        undeformed_node_coordinates = self.used_mesh.node_array
+        for beam, _ in enumerate(self.used_mesh.beam_array):
+            nodes_per_beam = self.used_mesh._fetch_beam_nodes(beam)
+            self.my_ax.plot(undeformed_node_coordinates[nodes_per_beam][:, 0],
+                            undeformed_node_coordinates[nodes_per_beam][:, 1],
+                            linewidth=0.1,
+                            alpha=0.7,
+                            color='black',
+                            zorder=-1)
+
+        if stress is not None:
+            jet = plt.get_cmap('jet')
+            cNorm = colors.Normalize(vmin=stress_max_min[1],
+                                     vmax=stress_max_min[0])
+
+            scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
+
+            if self.make_drawing_counter == 1:
+                self.my_figure.colorbar(scalarMap,
+                                        ax=self.my_ax,
+                                        location='bottom',
+                                        aspect=30)
+
+            all_nodes_stress = np.zeros_like(self.used_mesh.node_array[:, 0])
+            all_nodes_stress[used_nodes] = cm.calculate_von_mises_stress(stress)
+
         all_nodes_coordinates = np.zeros_like(self.used_mesh.node_array)
-        print(self.used_mesh.node_array[31])
-        print(f'final node cord w/o disp: {all_nodes_coordinates[31]}')
         all_nodes_coordinates[used_nodes] = displacement * displacement_scale
-        print(f'final node cord w disp: {all_nodes_coordinates[31]}')
         all_nodes_coordinates += self.used_mesh.node_array
 
         # Plot beams
@@ -116,30 +145,48 @@ class mesh_drawer():
 
             nodes_per_beam = self.used_mesh._fetch_beam_nodes(beam)
 
-            data_linewidth_plot(all_nodes_coordinates[nodes_per_beam][:, 0],
-                                all_nodes_coordinates[nodes_per_beam][:, 1],
-                                ax=self.my_ax,
-                                linewidth=width,
-                                color='black',
-                                zorder=1)
+            ppd = 72./self.my_figure.dpi
+            trans = self.my_ax.transData.transform
+            lw = ((trans((1, width))-trans((0, 0)))*ppd)[1]
+
+            if stress is not None:
+                lc = mcoll.LineCollection(
+                    [all_nodes_coordinates[nodes_per_beam]],
+                    linewidths=lw,
+                    colors=scalarMap.to_rgba(all_nodes_stress[nodes_per_beam]),
+                    zorder=1
+                )
+
+            else:
+                lc = mcoll.LineCollection(
+                    [all_nodes_coordinates[nodes_per_beam]],
+                    linewidths=lw,
+                    colors=['black' for _ in nodes_per_beam],
+                    zorder=1
+                )
+
+            self.my_ax.add_collection(lc)
+
 
             # plots beam names on beams
-            self.my_ax.text(
-                (
-                    all_nodes_coordinates[nodes_per_beam[0]][0]
-                    +
-                    all_nodes_coordinates[nodes_per_beam[-1]][0]
-                ) / 2,
-                (
-                    all_nodes_coordinates[nodes_per_beam[0]][1]
-                    +
-                    all_nodes_coordinates[nodes_per_beam[-1]][1]
-                ) / 2,
-                f'b_{beam}',
-                color='red',
-                fontsize='small',
-                horizontalalignment='center'
-            )
+            if beam_names:
+                self.my_ax.text(
+                    (
+                        all_nodes_coordinates[nodes_per_beam[0]][0]
+                        +
+                        all_nodes_coordinates[nodes_per_beam[-1]][0]
+                    ) / 2,
+                    (
+                        all_nodes_coordinates[nodes_per_beam[0]][1]
+                        +
+                        all_nodes_coordinates[nodes_per_beam[-1]][1]
+                    ) / 2,
+                    f'b_{beam}',
+                    color='red',
+                    fontsize='small',
+                    horizontalalignment='center'
+                )
+
 
         # Plot nodes and boundaries
         for node in np.intersect1d(self.used_mesh.main_nodes, used_nodes):
@@ -156,14 +203,14 @@ class mesh_drawer():
                                    marker=f'${DOF_to_print}$',
                                    edgecolor='red',
                                    zorder=1)
-            else:
-                self.my_ax.scatter(all_nodes_coordinates[node][0],
-                                   all_nodes_coordinates[node][1],
-                                   s=30,
-                                   color='green',
-                                   marker='o',
-                                   edgecolor='red',
-                                   zorder=1)
+            # else:
+            #     self.my_ax.scatter(all_nodes_coordinates[node][0],
+            #                        all_nodes_coordinates[node][1],
+            #                        s=30,
+            #                        color='green',
+            #                        marker='o',
+            #                        edgecolor='red',
+            #                        zorder=1)
 
         # Plot forces
         for force in self.used_mesh.force_array:
@@ -173,21 +220,27 @@ class mesh_drawer():
                 (np.max(self.used_mesh.node_array) -
                  np.min(self.used_mesh.node_array)) * direction / 10
             )
+
+            arrow_width = np.sum([
+                - np.min(self.used_mesh.node_array[:, 0]) - x_lim_10_perc,
+                np.max(self.used_mesh.node_array[:, 0]) + x_lim_10_perc
+            ]) * 0.008
+
             self.my_ax.arrow(all_nodes_coordinates[int(force[0])][0] + dx,
                              all_nodes_coordinates[int(force[0])][1] + dy,
                              - dx,
                              - dy,
-                             width=0.05,
-                             head_width=0.1,
+                             width=arrow_width,
+                             head_width=arrow_width * 1.5,
                              length_includes_head=True,
                              color='red')
 
-            self.my_ax.text(all_nodes_coordinates[int(force[0])][0] + dx,
-                            all_nodes_coordinates[int(force[0])][1] + dy,
-                            f'{resultant_force:.1E}N',
-                            fontweight='black',
-                            fontsize='small',
-                            horizontalalignment='center')
+#             self.my_ax.text(f'{resultant_force:.2f}',
+#                                 xy=(all_nodes_coordinates[int(force[0])][0],
+#                                     all_nodes_coordinates[int(force[0])][1]),
+#                                 xytext=(dx/2,
+#                                         dy/2),
+#                                 textcoords='offset points')
 
         # Plot initial displacement
         for init_disp in self.used_mesh.initial_displacement_array:
@@ -199,6 +252,11 @@ class mesh_drawer():
                              head_width=0.3,
                              color='red',
                              zorder=0)
+
+        self.my_info_ax.set_axis_off()
+
+        self.my_info_ax.set_title('INFO'.center(40, ':'),
+                                  loc='center')
 
     def save_drawing(self,
                      name: str):

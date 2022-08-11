@@ -37,7 +37,7 @@ example_mesh.used_mesh.beam_width_array[tanke] = 5
 
 example_mesh.load_from_info(len(tanke))
 
-example_mesh.used_mesh.beam_height = 5
+example_mesh.used_mesh.beam_height = 5.8
 
 example_mesh.load_best_ccx_solutions()
 
@@ -48,27 +48,58 @@ drawer = cv.mesh_drawer()
 drawer.from_object(example_mesh.used_mesh)
 drawer.my_figure.suptitle('Optimizacija primjera iz literature')
 
+von_mis_stress_per_it = np.array(
+    [cm.calculate_von_mises_stress(stress_per_it) for stress_per_it in example_mesh.calculated_stress]
+)
+
+max_von_misses_stress = np.max(von_mis_stress_per_it)
+min_von_misses_stress = np.min(von_mis_stress_per_it)
+print(max_von_misses_stress)
+print(min_von_misses_stress)
 
 def drawing_function(iterator):
 
     drawer.my_ax.clear()
+    drawer.my_info_ax.clear()
 
     example_mesh.used_mesh.beam_width_array[tanke] = \
         example_mesh.calculated_widths[iterator]
-    example_mesh.used_mesh.beam_height = \
-        example_mesh.calculated_heights[iterator]
 
     optimization_iteration = example_mesh.iteration_list[iterator]
-
-    drawer.my_ax.set_title(f'Iteracija: {optimization_iteration}',
-                           loc='left')
 
     displacement = example_mesh.calculated_displacement[iterator]
     stress = example_mesh.calculated_stress[iterator]
 
-    drawer.make_drawing(displacement, 10)
+    y_error = np.sum(
+        (example_mesh.used_mesh.final_displacement_array[:, 1:][:, 1] -
+         displacement[example_mesh.final_displacement_node_positions][:, 1])**2,
+        axis=0
+    )
+
+    io_ratio = example_mesh.used_mesh.final_displacement_array[:, 1:][0, 1] / displacement[example_mesh.force_node_positions[0]][1]
+
+    # print(f'displ_final: {example_mesh.used_mesh.final_displacement_array[:, 1:][0, 1]}')
+    # print(f'displ: {example_mesh.used_mesh.final_displacement_array[:, 1:][0, 1]}')
+    # print(f'ratio: {io_ratio}')
+
+    info_dict = {
+        'Iteracija': int(optimization_iteration),
+        'h' + '[' + r'$\mu m$' + ']': f'{example_mesh.used_mesh.beam_height:.5E}',  # visina mreže
+        r'$dt_{j}$' + '[' + r'$\mu m$' + ']': f'{example_mesh.used_mesh.final_displacement_array[:, 1:][:, 1]}',  # Traženi pomaci
+        r'$dd_{j}$' + '[' + r'$\mu m$' + ']': f'{displacement[:, 1][example_mesh.final_displacement_node_positions]}',  # Dobiveni pomaci
+        r'$y_{err}=\left(\sum{dt_{j}-dd_{j}}\right)^2$': f'{y_error:.5E}',  # error
+        'output/input ratio r': f'{io_ratio:.2f}'  # output to input ratio
+    }
+
+    drawer.make_drawing(info_dict,
+                        displacement,
+                        stress,
+                        (max_von_misses_stress, min_von_misses_stress),
+                        displacement_scale=20)
+    drawer.my_ax.set_title('Rezultati optimizacije')
+    drawer.save_drawing(f'best_{int(optimization_iteration)}')
     print(f'Made up to: {optimization_iteration} iteration' +
-          f'\nMax y displacement: {displacement[:, 1][example_mesh.final_diplacement_node_positions]}')
+          f'\nMax y displacement: {displacement[:, 1][example_mesh.final_displacement_node_positions]}')
 
 animation = anim.FuncAnimation(drawer.my_figure,
                                drawing_function,

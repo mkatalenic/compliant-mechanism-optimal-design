@@ -8,6 +8,8 @@ import case_visualisation as cv
 import os
 import shutil
 
+from indago import PSO
+
 '''
 Vrijednosti se zadaju u mikrometrima, gramima i sekundama
 E = 1 N/m^2 = 10^-3 g/micrometer*s^2
@@ -70,51 +72,66 @@ example_mesh.write_beginning_state()
 
 ccx_helper = cm.calculix_manipulator(example_mesh)
 
-from indago import PSO
-
 
 def evaluation(all_widths, unique_str=None):
 
-    heigth = all_widths[0]
-    widths = all_widths[1:]
+    # heigth = all_widths[0]
+    heigth = 5.8
+    widths = all_widths
 
     ccx_helper.used_mesh.beam_height = heigth
     ccx_helper.used_mesh.beam_width_array[tanke] = widths
-    ccx_results = ccx_helper.run_ccx(unique_str)
+    ccx_results = ccx_helper.run_ccx(
+        unique_str,
+        von_mises_instead_of_principal=True
+    )
 
     if ccx_results is False:
-        return np.nan, np.nan, np.nan, np.nan
+        return np.nan, np.nan, np.nan, np.nan  #, np.nan
     else:
-        (displacement, _) = ccx_results
+        (displacement, vm_stress) = ccx_results
+
         y_error = np.sum(
             (ccx_helper.used_mesh.final_displacement_array[:, 1:][:, 1] -
-             displacement[ccx_helper.final_diplacement_node_positions][:, 1])**2,
+             displacement[ccx_helper.final_displacement_node_positions][:, 1])**2,
             axis=0
         )
+
         x_error = abs(float(
-            displacement[ccx_helper.final_diplacement_node_positions][:, 0]
+            displacement[ccx_helper.final_displacement_node_positions][:, 0]
         )) - 1e-6
+
         mech_volume = ccx_helper.used_mesh.calculate_mechanism_volume()
 
         max_y_error = abs(y_error) - 1e-3
 
-        return y_error, mech_volume, x_error, max_y_error
+        force_application_node_displacement = displacement[
+            ccx_helper.force_node_positions
+        ][:, 1]
+
+        y_final_disp = displacement[
+            ccx_helper.final_displacement_node_positions
+        ][:, 1]
+
+        amplification_ratio_error = abs(abs(force_application_node_displacement[0] / y_final_disp[0]) - 7) - 2e-1
+
+        return y_error, mech_volume, x_error, max_y_error  #, amplification_ratio_error
 
 
 optimizer = PSO()
-optimizer.dimensions = np.size(tanke) + 1
+optimizer.dimensions = np.size(tanke)
 optimizer.lb = np.ones((optimizer.dimensions)) * 1e-4
-optimizer.lb[0] = 0.053
+#optimizer.lb[0] = 0.053
 optimizer.ub = np.ones((optimizer.dimensions)) * 5
-optimizer.ub[0] = 10
+#optimizer.ub[0] = 10
 optimizer.iterations = 1000
 
 optimizer.evaluation_function = evaluation
 optimizer.objectives = 2
 optimizer.objective_labels = ['y_error', 'mechanism volume']
 optimizer.objective_weights = [0.7, 0.3]
-optimizer.constraints = 2
-optimizer.constraint_labels = ['x_error', 'max possible y_error']
+optimizer.constraints = 2  #3
+optimizer.constraint_labels = ['x_error', 'max possible y_error']  #, 'amplification_error']
 
 # optimizer.safe_evaluation = True
 
@@ -125,8 +142,6 @@ optimizer.eval_retry_recede = 0.05
 optimizer.number_of_processes = 'maximum'
 
 optimizer.forward_unique_str = True
-
-optimizer.monitoring = 'dashboard'
 
 test_dir = './ccx_files'
 drawing = cv.mesh_drawer()
@@ -162,4 +177,5 @@ def post_iteration_processing(it, candidates, best):
 
 
 optimizer.post_iteration_processing = post_iteration_processing
+optimizer.monitoring = 'dashboard'
 results = optimizer.optimize()

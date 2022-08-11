@@ -53,8 +53,14 @@ class calculix_manipulator():
         ):
             os.mkdir(os.path.join(os.getcwd(), 'ccx_files'))
 
-    final_diplacement_node_positions = np.empty(shape=(0),
-                                                dtype=int)
+    final_displacement_node_positions = np.empty(shape=(0),
+                                                 dtype=int)
+
+    force_node_positions = np.empty(shape=(0),
+                                    dtype=int)
+
+    boundary_node_positions = np.empty(shape=(0),
+                                       dtype=int)
 
     def translate_mesh(self):
 
@@ -89,11 +95,28 @@ class calculix_manipulator():
             node_counter += 1
             for node, _, _ in self.used_mesh.final_displacement_array:
                 if node + 1 == int(string.split(',')[0]) and \
-                   node_counter not in self.final_diplacement_node_positions:
-                    self.final_diplacement_node_positions = np.append(
-                        self.final_diplacement_node_positions,
+                   node_counter not in self.final_displacement_node_positions:
+                    self.final_displacement_node_positions = np.append(
+                        self.final_displacement_node_positions,
                         node_counter
                     )
+
+            for node in self.used_mesh.force_array[:, 0]:
+                if node + 1 == int(string.split(',')[0]) and \
+                   node_counter not in self.force_node_positions:
+                    self.force_node_positions = np.append(
+                        self.force_node_positions,
+                        node_counter
+                    )
+
+            for node in self.used_mesh.boundary_array[:, 0]:
+                if node + 1 == int(string.split(',')[0]) and \
+                   node_counter not in self.boundary_node_positions:
+                    self.boundary_node_positions = np.append(
+                        self.boundary_node_positions,
+                        node_counter
+                    )
+
             output_string += string
 
         # Beam translator
@@ -227,7 +250,8 @@ class calculix_manipulator():
         return solver_path
 
     def read_results(self,
-                     ccx_case_path: str):
+                     ccx_case_path: str,
+                     von_mises: bool = False):
 
         if os.path.split(ccx_case_path)[-1].endswith('.frd'):
             case_file = ccx_case_path
@@ -301,12 +325,35 @@ class calculix_manipulator():
                     axis=0
                 )
 
-        return (displacement_array[:, :-1][-self._no_of_used_nodes:],
-                stress_array[-self._no_of_used_nodes:])
+        if von_mises:
+            stress = stress_array[-self._no_of_used_nodes:]
+            sig_x = stress[:, 0]
+            sig_y = stress[:, 1]
+            sig_z = stress[:, 2]
+            tau_xy = stress[:, 3]
+            tau_yz = stress[:, 4]
+            tau_zx = stress[:, 5]
+            von_mises_eq_stress = np.sqrt(
+                (sig_x - sig_y)**2 +
+                (sig_y - sig_z)**2 +
+                (sig_z - sig_x)**2 +
+                6 * (
+                    tau_xy**2 +
+                    tau_yz**2 +
+                    tau_zx**2
+                    )
+            ) / np.sqrt(2)
+            return (displacement_array[:, :-1][-self._no_of_used_nodes:],
+                    von_mises_eq_stress)
+
+        else:
+            return (displacement_array[:, :-1][-self._no_of_used_nodes:],
+                    stress_array[-self._no_of_used_nodes:])
 
     def run_ccx(self,
                 ccx_case_name: str,
-                delete_after_completion: bool = False):
+                delete_after_completion: bool = False,
+                von_mises_instead_of_principal: bool = True):
 
         # Bura ccx
         # ccx_name = 'ccx_2.19'
@@ -326,7 +373,10 @@ class calculix_manipulator():
             if line.startswith(' *ERROR') or len(err) != 0:
                 return False  # U slučaju propale analize
 
-        results = self.read_results(ccx_file_path)
+        results = self.read_results(
+            ccx_file_path,
+            von_mises=von_mises_instead_of_principal
+        )
         if results is False:
             return False
 
@@ -336,7 +386,8 @@ class calculix_manipulator():
         return results  # U slučaju uspješne analize
 
     def load_from_info(self,
-                       widths_size=None):
+                       widths_size=None,
+                       include_height=False):
 
         if widths_size is None:
             self.calculated_widths = np.empty(
@@ -349,7 +400,9 @@ class calculix_manipulator():
             self.calculated_widths = np.empty((0, widths_size),
                                               dtype=float)
         self.iteration_list = np.empty(0, dtype=float)
-        self.calculated_heights = np.empty(0, dtype=float)
+
+        if include_height:
+            self.calculated_heights = np.empty(0, dtype=float)
 
         with open(
                 os.path.join(
@@ -364,13 +417,19 @@ class calculix_manipulator():
                     int(case.split()[0]))
                 res = re.findall(r"\[([^\]]*)\]", case)
 
-                self.calculated_heights = np.append(
-                    self.calculated_heights,
-                    float(res[0].split(', ')[0])
-                )
+                if include_height:
+                    self.calculated_heights = np.append(
+                        self.calculated_heights,
+                        float(res[0].split(', ')[0])
+                    )
 
-                widths_in_iteration = np.array(res[0].split(', ')[1:],
-                                               dtype=float)
+                if include_height:
+                    widths_in_iteration = np.array(res[0].split(', ')[1:],
+                                                   dtype=float)
+                else:
+                    widths_in_iteration = np.array(res[0].split(', '),
+                                                   dtype=float)
+
                 no_widths = np.size(widths_in_iteration)
                 widths_in_iteration = np.reshape(
                     widths_in_iteration, (1, no_widths)
@@ -448,3 +507,24 @@ class calculix_manipulator():
                 ),
                 axis=0
             )
+
+
+def calculate_von_mises_stress(stress):
+
+        sig_x = stress[:, 0]
+        sig_y = stress[:, 1]
+        sig_z = stress[:, 2]
+        tau_xy = stress[:, 3]
+        tau_yz = stress[:, 4]
+        tau_zx = stress[:, 5]
+        von_mises_eq_stress = np.sqrt(
+            (sig_x - sig_y)**2 +
+            (sig_y - sig_z)**2 +
+            (sig_z - sig_x)**2 +
+            6 * (
+                tau_xy**2 +
+                tau_yz**2 +
+                tau_zx**2
+                )
+        ) / np.sqrt(2)
+        return von_mises_eq_stress
