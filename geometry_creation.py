@@ -263,6 +263,25 @@ class Mesh():
 
         return out_nodes
 
+    def beam_laso(self,
+                  polygon_points: list[tuple]):
+        '''
+        Ouputs a list of beam ids
+        '''
+
+        cought_nodes = self.node_laso(poly_points=polygon_points,
+                                      only_main_nodes=False)
+        cought_beams = np.empty(shape=(0))
+
+        for beam in range(np.shape(self.beam_array)[0]):
+            nodes_in_beam = self._fetch_beam_nodes(beam)
+            if any(np.in1d(nodes_in_beam, cought_nodes)):
+                cought_beams = np.append(
+                    cought_beams,
+                    beam
+                )
+
+        return cought_beams
     '''
          _   _       _ _
      ___| |_| |_ ___|_| |_ _ _ ___ ___ ___
