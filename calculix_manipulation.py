@@ -194,15 +194,9 @@ class calculix_manipulator():
             if z_rot != 0:
                 output_string += f'{idx}, {z_rot*6}\n'
 
-        # Linear/nonlinear solver
-        if self.nonlinear_calculation:
-            output_string += '*step, nlgeom\n*static\n'
-        else:
-            output_string += '*step\n*static\n'
-
         # Initial displacement writer
         if np.size(self.used_mesh.initial_displacement_array) != 0:
-            output_string += '*boundary\n'
+            output_string += '*initial conditions,type=displacement\n'
         for (idx, disp_x, disp_y) in self.used_mesh.initial_displacement_array:
             disp_x_sting = f'{int(idx + 1)}, 1, {disp_x}\n'
             disp_y_sting = f'{int(idx + 1)}, 2, {disp_y}\n'
@@ -210,6 +204,12 @@ class calculix_manipulator():
                 output_string += disp_x_sting
             if disp_y != 0:
                 output_string += disp_y_sting
+
+        # Linear/nonlinear solver
+        if self.nonlinear_calculation:
+            output_string += '*step, nlgeom\n*static\n'
+        else:
+            output_string += '*step\n*static\n'
 
         # Force writer
         if np.size(self.used_mesh.force_array) != 0:
