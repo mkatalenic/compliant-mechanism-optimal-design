@@ -87,12 +87,12 @@ mesh.create_initial_displacement(
 # )
 
 mesh.set_final_displacement(
-    (3/2*100e-3, 0),
+    (2/3*100e-3, 0),
     (6e-3, 0)
 )
 
 mesh.set_final_displacement(
-    (6/5*100e-3, 12.5e-3),
+    (5/6*100e-3, 12.5e-3),
     (0, -6e-3)
 )
 
@@ -174,6 +174,10 @@ x0 = np.random.random(np.size(x0)) * 4e-3 + 1.8e-3
 
 res = minimize(min_fun,
                x0,
+               bounds = Bounds(
+                   lb=np.ones_like(x0) * 1.9e-3,
+                   ub=np.ones_like(x0) * 8e-3,
+               ),
                method='nelder-mead',
                options={'disp': True,
                         'return_all': True})

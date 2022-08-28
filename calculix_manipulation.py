@@ -94,8 +94,10 @@ class calculix_manipulator():
         ]:
             node_counter += 1
             for node, _, _ in self.used_mesh.final_displacement_array:
+                node = int(node)
                 if node + 1 == int(string.split(',')[0]) and \
-                   node_counter not in self.final_displacement_node_positions:
+                   node_counter not in self.final_displacement_node_positions and \
+                   np.shape(self.used_mesh.final_displacement_array)[0] != self.final_displacement_node_positions.size:
                     self.final_displacement_node_positions = np.append(
                         self.final_displacement_node_positions,
                         node_counter
