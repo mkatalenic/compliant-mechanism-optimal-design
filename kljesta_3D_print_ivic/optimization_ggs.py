@@ -9,20 +9,21 @@ import numpy as np
 sys.path.append("..")
 
 from indago import GGS, PSO
+from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 import geometry_creation as gc
 import calculix_manipulation as cm
 import case_visualisation as cv
 
 mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
-                            10e-3, # Maximum element size
+                            5e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
                             (6, 2), # Frame grid division
                             'x' # Frame grid additional support
                             )
 
-mesh.minimal_beam_width = 1e-3 # (variable thickness) Beams with lower widths are removed
+mesh.minimal_beam_width = 2e-4 # (variable thickness) Beams with lower widths are removed
 mesh.beam_height = 8e-3 # z thickenss (fixed)
 
 # Beam thickness initialization (in order to calculate refernt volume)
@@ -102,18 +103,12 @@ ccx_manipulator = cm.calculix_manipulator(mesh)
 import random
 import string
 
-
 def generateRandomAlphaNumericString(length):
     # Generate alphanumeric string
     letters = string.ascii_lowercase + string.digits
     result_str = ''.join(random.choice(letters) for i in range(length))
 
     return result_str
-
-# drawer = cv.mesh_drawer()
-# drawer.from_object(ccx_manipulator.used_mesh)
-# drawer.my_figure.suptitle('Optimizacija klješta')
-
 
 def min_fun(beam_widths, unique_str=None, debug=False):
     #print(beam_widths)
@@ -129,17 +124,12 @@ def min_fun(beam_widths, unique_str=None, debug=False):
 
     
     if ccx_results:        
-        volume = ccx_manipulator.used_mesh.calculate_mechanism_volume()
+        volume = ccx_manipulator.used_mesh.calculate_mechanism_volume() / max_volume
         
         # Ovo mi baš nije sasvim jasno:
         displacement, vm_stress = ccx_results
         u_goal = ccx_manipulator.used_mesh.final_displacement_array[:, 1:]
         u_calc = displacement[ccx_manipulator.final_displacement_node_positions]
-        if debug:
-            print(f'{u_goal=}')
-            print(f'{u_calc=}')
-            print(f'{displacement=}')
-            print(f'{ccx_manipulator.final_displacement_node_positions=}')
 
         if u_goal.shape != u_calc.shape:
             print('!' * 20)
@@ -149,22 +139,44 @@ def min_fun(beam_widths, unique_str=None, debug=False):
             # input('Press return to continue.')
         
         errors = u_calc - u_goal
-
+        
+        m = np.abs(u_goal) > 0
+        errors[m] = np.abs(errors[m] / u_goal[m])
         
         # x_err = np.sum(errors[:, 0]**2) #/ 100e-3 #* 6
         # y_err = np.sum(errors[:, 1]**2) #/ 25e-3 #* 2
-        x_err = np.sum(np.abs(errors[:, 0])) #/ 100e-3 #* 6
-        y_err = np.sum(np.abs(errors[:, 1])) #/ 25e-3 #* 2
+        x_err = np.average(errors[:, 0]) #/ 100e-3 #* 6
+        y_err = np.average(errors[:, 1]) #/ 25e-3 #* 2
 
+        if debug:
+            print(f'{u_goal=}')
+            print(f'{u_calc=}')
+            print(f'{m=}')
+            # print(f'{displacement=}')
+            # print(f'{ccx_manipulator.final_displacement_node_positions=}')
+            
         return volume, x_err, y_err, 0
     
     else:        
         return np.nan, np.nan, np.nan, 1
 
+def eval_penalty(beam_widths, debug=False):
+    
+    unique_str = generateRandomAlphaNumericString(20)
+    volume, x_err, y_err, valid = min_fun(beam_widths, unique_str, debug)
+    fit = volume * 0.001 + x_err + x_err * 0.001 + y_err * 0.998
+    
+    print(beam_widths)
+    print(volume, x_err, y_err, valid, fit)
+    if valid:
+        return fit
+    else:
+        return 1e10
+    
 dims = np.size(used_beams)
 optimizer = GGS()
 optimizer.dimensions = dims
-optimizer.lb = np.ones((optimizer.dimensions)) * 0.9 * 1e-3
+optimizer.lb = np.ones((optimizer.dimensions)) * 0
 optimizer.ub = np.ones((optimizer.dimensions)) * 10 * 1e-3
 optimizer.iterations = 1000
 optimizer.maximum_evaluations = 20000
@@ -172,12 +184,12 @@ optimizer.maximum_evaluations = 20000
 optimizer.evaluation_function = min_fun
 optimizer.objectives = 3
 optimizer.objective_labels = ['vol', 'x_err', 'y_err']
-# optimizer.objective_weights = [0.7, 0.3]
+optimizer.objective_weights = [0.001, 0.001, 0.998]
 optimizer.constraints = 1
 optimizer.constraint_labels = ['valid_sim']
 
 # optimizer.safe_evaluation = True
-optimizer.params['n'] = 101
+optimizer.params['n'] = 51
 optimizer.params['k_max'] = 2
 
 optimizer.eval_fail_behavior = 'ignore'
@@ -191,15 +203,17 @@ optimizer.monitoring = 'dashboard'
 
 valid = False
 while not valid:
-    x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
+    x0 = optimizer.ub * 0.8
+    # x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
+    # x0[129] = 0
     #x0 = np.random.random(dims) * 4e-3 + 1.8e-3
     if os.path.exists('ccx_files/x0'):
         shutil.rmtree('ccx_files/x0')
-    r = min_fun(x0, 'x0')
+    r = min_fun(x0, 'x0', debug=True)
     print(r)
     valid = not r[3]
 
-
+# input('Press return to continue.')
 test_dir = './ccx_files'
 
 
@@ -238,19 +252,26 @@ def post_iteration_processing(it, candidates, best):
 
     return
 
-# r = min_fun(x0, 'test')            
-# print(r)
-optimizer.X0 = x0
+if True:
+    optimizer.X0 = x0
+    optimizer.post_iteration_processing = post_iteration_processing
+    results = optimizer.optimize()
+    print(results)
+    
+    optimizer.results.plot_convergence()
+    axes = plt.gcf().axes
+    # axes[0].set_yscale('log')
+    # axes[1].set_yscale('symlog')
+    plt.savefig('optimization.png')
+    
+    x0 = results.X
 
-optimizer.post_iteration_processing = post_iteration_processing
-results = optimizer.optimize()
-print(results)
-
-optimizer.results.plot_convergence()
-axes = plt.gcf().axes
-# axes[0].set_yscale('log')
-# axes[1].set_yscale('symlog')
-plt.savefig('optimization.png')
-
-
-# print(min_fun(results.X, 'best', debug=True))
+if False:
+    
+    opt = minimize(eval_penalty, x0, 
+                   method='SLSQP',
+                   tol=1e-12,
+                   bounds=[_lbub for _lbub in zip(optimizer.lb, optimizer.ub)],
+                   options={'eps':1e-4,
+                            'ftol':1e-12,}
+                   )

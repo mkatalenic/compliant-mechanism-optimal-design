@@ -100,7 +100,8 @@ def drawing_function(iterator):
                         displacement,
                         stress,
                         (max_von_misses_stress, min_von_misses_stress),
-                        displacement_scale=20)
+                        displacement_scale=20,
+                        beam_names=True)
     drawer.my_ax.set_title('Rezultati optimizacije')
     drawer.save_drawing(f'best_{int(optimization_iteration)}')
     print(f'Made up to: {optimization_iteration} iteration' +

@@ -145,7 +145,7 @@ class mesh_drawer():
 
             nodes_per_beam = self.used_mesh._fetch_beam_nodes(beam)
 
-            ppd = 72./self.my_figure.dpi
+            ppd = 10./self.my_figure.dpi
             trans = self.my_ax.transData.transform
             lw = ((trans((1, width))-trans((0, 0)))*ppd)[1]
 
