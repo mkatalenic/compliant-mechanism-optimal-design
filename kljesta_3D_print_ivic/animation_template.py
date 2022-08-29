@@ -44,7 +44,7 @@ used_beams = [
 # potrebno postaviti za potrebe dohvaćanja podataka
 mesh.used_mesh.beam_width_array[used_beams] = 5e-3
 
-mesh.load_from_info(used_beams.size)
+mesh.load_from_info(len(used_beams))
 
 mesh.used_mesh.beam_height = 8e-3
 
