@@ -111,7 +111,7 @@ class Mesh():
             return node_def
 
     def node_laso(self,
-                  poly_points: list[tuple],
+                  poly_points: list,
                   only_main_nodes: bool = True):
         '''
         Collects points that are inside of a given polygon
@@ -264,7 +264,7 @@ class Mesh():
         return out_nodes
 
     def beam_laso(self,
-                  polygon_points: list[tuple]):
+                  polygon_points: list):
         '''
         Ouputs a list of beam ids
         '''
@@ -294,7 +294,7 @@ class Mesh():
 
     def create_boundary(self,
                         node,
-                        bd_type: tuple[int],
+                        bd_type: tuple,
                         set_unremovable: bool = False):
         '''
         Creates a boundary

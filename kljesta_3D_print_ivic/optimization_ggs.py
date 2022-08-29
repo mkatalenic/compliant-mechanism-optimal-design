@@ -8,23 +8,24 @@ import numpy as np
 
 sys.path.append("..")
 
-from indago import GGS
+from indago import GGS, PSO
 import matplotlib.pyplot as plt
 import geometry_creation as gc
 import calculix_manipulation as cm
 import case_visualisation as cv
 
-mesh = gc.SimpleMeshCreator((2980e6, 0.2),
-                            10e-3,
-                            100e-3,
-                            25e-3,
-                            (6, 2),
-                            'x')
+mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
+                            10e-3, # Maximum element size
+                            100e-3, # Domain width
+                            25e-3, # Domain height
+                            (6, 2), # Frame grid division
+                            'x' # Frame grid additional support
+                            )
 
-mesh.minimal_beam_width = 2e-3
-mesh.beam_height = 8e-3
+mesh.minimal_beam_width = 2e-3 # (variable thickness) Beams with lower widths are removed
+mesh.beam_height = 8e-3 # z thickenss (fixed)
 
-
+# Beam thickness initialization (in order to calculate refernt volume)
 mesh.set_width_array(
     np.ones(
         np.shape(
@@ -32,18 +33,9 @@ mesh.set_width_array(
         )[0]
     ) * 5e-3
 )
-
 max_volume = mesh.calculate_mechanism_volume()
 
-mesh.set_width_array(
-    np.zeros(
-        np.shape(
-            mesh.beam_array
-        )[0]
-    )
-)
-
-# remove unwanted beams
+# Remove unwanted beams (removes beam inside of polygon)
 removed_beams = mesh.beam_laso(
     [
         (70e-3, -1e-3),
@@ -53,22 +45,26 @@ removed_beams = mesh.beam_laso(
     ]
 )
 
+# Set thickness to zero for all beams
+mesh.set_width_array(np.zeros(mesh.beam_array.shape[0]))
+
+# Beam to be optimized (varying thickness)
 used_beams = [
-    x for x in range(np.shape(mesh.beam_array)[0]) if x not in removed_beams
+    x for x in range(mesh.beam_array.shape[0]) if x not in removed_beams
 ]
 
+# Create symetry boundary condition (u_y=0, u_zz=0) and make nodes unremovable
 for node in mesh.node_laso(
         [
             (-1e-3, 1e-3),
-            (67e-3, 1e-3),
-            (67e-3, -1e-3),
+            (51e-3, 1e-3),
+            (51e-3, -1e-3),
             (-1e-3, -1e-3)
         ],
         only_main_nodes=True):
-    mesh.create_boundary(node,
-                         (0, 1, 1),
-                         set_unremovable=True)
+    mesh.create_boundary(node, (0, 1, 1), set_unremovable=True)
 
+# Set corner BC (u_x=0, u_y=0) and unremovable
 mesh.create_boundary(
     (0, 25e-3),
     (1, 1, 0),
@@ -81,23 +77,23 @@ mesh.create_boundary(
 # )
 
 mesh.create_force(
-    (0, 0),
-    (20, 0)
+    (0, 0), # x, y
+    (100, 0) # F_x, F_y
 )
 
-mesh.set_final_displacement(
-    (2/3*100e-3, 0),
-    (6e-3, 0)
-)
+# mesh.set_final_displacement(
+#     (2/3*100e-3, 0), # x, y
+#     (6e-3, 0) # u_x, u_y
+# )
 
 mesh.set_final_displacement(
     (5/6*100e-3, 12.5e-3),
-    (0, -6e-3)
+    (0, -6.25e-3)
 )
 
 mesh.set_final_displacement(
     (100e-3, 12.5e-3),
-    (-2e-3, -8e-3)
+    (0, -6.25e-3)
 )
 
 mesh.write_beginning_state()
@@ -119,9 +115,12 @@ def generateRandomAlphaNumericString(length):
 # drawer.my_figure.suptitle('Optimizacija klješta')
 
 
-def min_fun(beam_widths, unique_str=None):
+def min_fun(beam_widths, unique_str=None, debug=False):
     #print(beam_widths)
 
+    if os.path.exists(f'ccx_files/{unique_str}'):
+        shutil.rmtree(f'ccx_files/{unique_str}')
+        
     ccx_manipulator.used_mesh.beam_width_array[used_beams] = beam_widths
     ccx_results = ccx_manipulator.run_ccx(
         unique_str,
@@ -129,12 +128,17 @@ def min_fun(beam_widths, unique_str=None):
     )
 
     
-    if ccx_results:
-        (displacement, vm_stress) = ccx_results
+    if ccx_results:        
+        volume = ccx_manipulator.used_mesh.calculate_mechanism_volume()
         
         # Ovo mi baš nije sasvim jasno:
+        displacement, vm_stress = ccx_results
         u_goal = ccx_manipulator.used_mesh.final_displacement_array[:, 1:]
         u_calc = displacement[ccx_manipulator.final_displacement_node_positions]
+        if debug:
+            print(f'{u_goal=}')
+            print(f'{u_calc=}')
+        
         if u_goal.shape != u_calc.shape:
             print('!' * 20)
             print('shape error!', u_goal.shape, u_calc.shape)
@@ -142,16 +146,13 @@ def min_fun(beam_widths, unique_str=None):
             print('!' * 20)
             # input('Press return to continue.')
         
-        errors = ccx_manipulator.used_mesh.final_displacement_array[:, 1:] -\
-            displacement[ccx_manipulator.final_displacement_node_positions]
+        errors = u_calc - u_goal
 
-        print(ccx_manipulator.final_displacement_node_positions)
-        print(displacement[ccx_manipulator.final_displacement_node_positions])
-
-        volume = ccx_manipulator.used_mesh.calculate_mechanism_volume()
         
-        x_err = np.sum(errors[:, 0]**2) #/ 100e-3 #* 6
-        y_err = np.sum(errors[:, 1]**2) #/ 25e-3 #* 2
+        # x_err = np.sum(errors[:, 0]**2) #/ 100e-3 #* 6
+        # y_err = np.sum(errors[:, 1]**2) #/ 25e-3 #* 2
+        x_err = np.sum(np.abs(errors[:, 0])) #/ 100e-3 #* 6
+        y_err = np.sum(np.abs(errors[:, 1])) #/ 25e-3 #* 2
 
         return volume, x_err, y_err, 0
     
@@ -184,7 +185,7 @@ optimizer.eval_fail_behavior = 'ignore'
 optimizer.number_of_processes = 'maximum'
 
 optimizer.forward_unique_str = True
-optimizer.monitoring = 'basic'
+optimizer.monitoring = 'dashboard'
 
 valid = False
 while not valid:
@@ -201,9 +202,13 @@ while not valid:
 optimizer.X0 = x0
 
 results = optimizer.optimize()
+print(results)
 
 optimizer.results.plot_convergence()
 axes = plt.gcf().axes
-axes[0].set_yscale('log')
-axes[1].set_yscale('symlog')
+# axes[0].set_yscale('log')
+# axes[1].set_yscale('symlog')
 plt.savefig('optimization.png')
+
+
+print(min_fun(results.X, 'best', debug=True))
