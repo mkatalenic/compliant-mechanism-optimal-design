@@ -212,6 +212,10 @@ def post_iteration_processing(it, candidates, best):
         # f'{test_dir}/best')
 
         # Keeping best solution of each iteration (if it is the best overall)
+
+        if os.path.exists(f'{test_dir}/best_it{it}'):
+            shutil.rmtree(f'{test_dir}/best_it{it}')
+
         os.rename(f'{test_dir}/{candidates[0].unique_str}',
                   f'{test_dir}/best_it{it}')
 
@@ -230,6 +234,8 @@ def post_iteration_processing(it, candidates, best):
     # Remove candidates' directories
     for c in candidates:
         shutil.rmtree(f'{test_dir}/{c.unique_str}')
+
+
     return
 
 # r = min_fun(x0, 'test')            
