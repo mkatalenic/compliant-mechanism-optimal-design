@@ -37,7 +37,7 @@ mesh.used_mesh.set_width_array(np.zeros(mesh.used_mesh.beam_array.shape[0]))
 
 # Beam to be optimized (varying thickness)
 used_beams = [
-    x for x in range(mesh.beam_array.shape[0]) if x not in removed_beams
+    x for x in range(mesh.used_mesh.beam_array.shape[0]) if x not in removed_beams
 ]
 
 
