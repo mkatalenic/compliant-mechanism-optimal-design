@@ -140,7 +140,7 @@ def min_fun(beam_widths, unique_str=None, debug=False):
             print(f'{u_calc=}')
             print(f'{displacement=}')
             print(f'{ccx_manipulator.final_displacement_node_positions=}')
-        
+
         if u_goal.shape != u_calc.shape:
             print('!' * 20)
             print('shape error!', u_goal.shape, u_calc.shape)
