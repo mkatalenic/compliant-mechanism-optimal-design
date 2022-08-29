@@ -22,7 +22,7 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             'x' # Frame grid additional support
                             )
 
-mesh.minimal_beam_width = 2e-3 # (variable thickness) Beams with lower widths are removed
+mesh.minimal_beam_width = 1e-3 # (variable thickness) Beams with lower widths are removed
 mesh.beam_height = 8e-3 # z thickenss (fixed)
 
 # Beam thickness initialization (in order to calculate refernt volume)
@@ -138,6 +138,8 @@ def min_fun(beam_widths, unique_str=None, debug=False):
         if debug:
             print(f'{u_goal=}')
             print(f'{u_calc=}')
+            print(f'{displacement=}')
+            print(f'{ccx_manipulator.final_displacement_node_positions=}')
         
         if u_goal.shape != u_calc.shape:
             print('!' * 20)
@@ -162,8 +164,8 @@ def min_fun(beam_widths, unique_str=None, debug=False):
 dims = np.size(used_beams)
 optimizer = GGS()
 optimizer.dimensions = dims
-optimizer.lb = np.ones((optimizer.dimensions)) * 1.9e-3
-optimizer.ub = np.ones((optimizer.dimensions)) * 1e-2
+optimizer.lb = np.ones((optimizer.dimensions)) * 0.9 * 1e-3
+optimizer.ub = np.ones((optimizer.dimensions)) * 10 * 1e-3
 optimizer.iterations = 1000
 optimizer.maximum_evaluations = 20000
 
