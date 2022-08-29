@@ -198,11 +198,45 @@ while not valid:
     r = min_fun(x0, 'x0')
     print(r)
     valid = not r[3]
-    
+
+
+test_dir = './ccx_files'
+
+
+def post_iteration_processing(it, candidates, best):
+    if candidates[0] <= best:
+        # Keeping only overall best solution
+        # if os.path.exists(f'{test_dir}/best'):
+        #     shutil.rmtree(f'{test_dir}/best')
+        # os.rename(f'{test_dir}/{candidates[0].unique_str}',
+        # f'{test_dir}/best')
+
+        # Keeping best solution of each iteration (if it is the best overall)
+        os.rename(f'{test_dir}/{candidates[0].unique_str}',
+                  f'{test_dir}/best_it{it}')
+
+        # Log keeps track of new best solutions in each iteration
+        with open(f'{test_dir}/log.txt', 'a') as log:
+            X = ', '.join(f'{x:13.6e}' for x in candidates[0].X)
+            O = ', '.join(f'{o:13.6e}' for o in candidates[0].O)
+            C = ', '.join(f'{c:13.6e}' for c in candidates[0].C)
+            log.write(f'{it:6d} X:[{X}], O:[{O}], C:[{C}]' +
+                      f' fitness:{candidates[0].f:13.6e}\n')
+
+        # Remove the best from candidates
+        # (since its directory is already renamed)
+        candidates = np.delete(candidates, 0)
+
+    # Remove candidates' directories
+    for c in candidates:
+        shutil.rmtree(f'{test_dir}/{c.unique_str}')
+    return
+
 # r = min_fun(x0, 'test')            
 # print(r)
 optimizer.X0 = x0
 
+optimizer.post_iteration_processing = post_iteration_processing
 results = optimizer.optimize()
 print(results)
 
@@ -213,4 +247,4 @@ axes = plt.gcf().axes
 plt.savefig('optimization.png')
 
 
-print(min_fun(results.X, 'best', debug=True))
+# print(min_fun(results.X, 'best', debug=True))
