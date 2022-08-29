@@ -23,7 +23,7 @@ mesh = cm.calculix_manipulator(
 )
 
 # Remove unwanted beams (removes beam inside of polygon)
-removed_beams = mesh.beam_laso(
+removed_beams = mesh.used_mesh.beam_laso(
     [
         (70e-3, -1e-3),
         (70e-3, 12e-3),
@@ -33,7 +33,7 @@ removed_beams = mesh.beam_laso(
 )
 
 # Set thickness to zero for all beams
-mesh.set_width_array(np.zeros(mesh.beam_array.shape[0]))
+mesh.used_mesh.set_width_array(np.zeros(mesh.beam_array.shape[0]))
 
 # Beam to be optimized (varying thickness)
 used_beams = [
