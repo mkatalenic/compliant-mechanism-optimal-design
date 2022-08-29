@@ -2,10 +2,17 @@
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
-import numpy as np
-import os
-import re
 
+import sys
+import os
+import shutil
+
+import numpy as np
+
+sys.path.append("..")
+
+from indago import GGS, PSO
+import matplotlib.pyplot as plt
 import geometry_creation as gc
 import calculix_manipulation as cm
 import case_visualisation as cv
