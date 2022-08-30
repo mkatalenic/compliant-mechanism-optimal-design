@@ -96,7 +96,7 @@ class mesh_drawer():
             ) if float(_) != 0.]
         )
 
-        used_nodes = used_nodes_idx
+        used_nodes = np.unique(used_nodes_idx)
 
 
         if displacement is None:

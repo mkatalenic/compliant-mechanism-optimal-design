@@ -19,7 +19,7 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             5e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (6, 2), # Frame grid division
+                            (12, 4), # Frame grid division
                             'x' # Frame grid additional support
                             )
 
@@ -192,7 +192,8 @@ optimizer.evaluation_function = min_fun
 optimizer.objectives = 4
 optimizer.objective_labels = ['vol', 'x_err', 'y_err', 'y_err_std']
 # optimizer.objective_weights = [0.001, 0.001, 0.99, 0.008]
-optimizer.objective_weights = [0, 0, 0.99, 0.01]
+# optimizer.objective_weights = [0, 0, 0.99, 0.01] # Ovo radi vrlo dobro
+optimizer.objective_weights = [1e-6, 1e-6, 1, 0.1]
 optimizer.constraints = 1
 optimizer.constraint_labels = ['invalid_sim']
 
