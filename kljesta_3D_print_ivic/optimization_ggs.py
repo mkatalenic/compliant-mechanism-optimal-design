@@ -115,17 +115,17 @@ def min_fun(beam_widths, unique_str=None, debug=False):
 
     if os.path.exists(f'ccx_files/{unique_str}'):
         shutil.rmtree(f'ccx_files/{unique_str}')
-        
+
     ccx_manipulator.used_mesh.beam_width_array[used_beams] = beam_widths
     ccx_results = ccx_manipulator.run_ccx(
         unique_str,
-        von_mises_instead_of_principal=True
+        von_mises_instead_of_principal=False
     )
 
-    
-    if ccx_results:        
+
+    if ccx_results:
         volume = ccx_manipulator.used_mesh.calculate_mechanism_volume() / max_volume
-        
+
         # Ovo mi baš nije sasvim jasno:
         displacement, vm_stress = ccx_results
         u_goal = ccx_manipulator.used_mesh.final_displacement_array[:, 1:]
@@ -137,12 +137,15 @@ def min_fun(beam_widths, unique_str=None, debug=False):
             # print(beam_widths)
             print('!' * 20)
             # input('Press return to continue.')
-        
+
+        ccx_manipulator.used_mesh.current_displacement = displacement
+        ccx_manipulator.used_mesh.current_stress = vm_stress
+
         errors = u_calc - u_goal
-        
+
         m = np.abs(u_goal) > 0
         errors[m] = np.abs(errors[m] / u_goal[m])
-        
+
         # x_err = np.sum(errors[:, 0]**2) #/ 100e-3 #* 6
         # y_err = np.sum(errors[:, 1]**2) #/ 25e-3 #* 2
         x_err = np.average(errors[:, 0]) #/ 100e-3 #* 6
@@ -154,25 +157,25 @@ def min_fun(beam_widths, unique_str=None, debug=False):
             print(f'{m=}')
             # print(f'{displacement=}')
             # print(f'{ccx_manipulator.final_displacement_node_positions=}')
-            
+
         return volume, x_err, y_err, 0
-    
-    else:        
+
+    else:
         return np.nan, np.nan, np.nan, 1
 
 def eval_penalty(beam_widths, debug=False):
-    
+
     unique_str = generateRandomAlphaNumericString(20)
     volume, x_err, y_err, valid = min_fun(beam_widths, unique_str, debug)
     fit = volume * 0.001 + x_err + x_err * 0.001 + y_err * 0.998
-    
+
     print(beam_widths)
     print(volume, x_err, y_err, valid, fit)
     if valid:
         return fit
     else:
         return 1e10
-    
+
 dims = np.size(used_beams)
 optimizer = GGS()
 optimizer.dimensions = dims
@@ -216,6 +219,11 @@ while not valid:
 # input('Press return to continue.')
 test_dir = './ccx_files'
 
+# postavke animacije
+drawer = cv.mesh_drawer()
+drawer.from_object(mesh)
+drawer.my_figure.suptitle('Optimizacija kljesta')
+
 
 def post_iteration_processing(it, candidates, best):
     if candidates[0] <= best:
@@ -245,10 +253,33 @@ def post_iteration_processing(it, candidates, best):
         # (since its directory is already renamed)
         candidates = np.delete(candidates, 0)
 
+        drawer.my_ax.clear()
+        drawer.my_info_ax.clear()
+
+        kljesta_info = {
+            'Iteracija': int(it),
+            'h ' + '[m]': f'{mesh.beam_height:.5E}',
+            r'$dt_{j}$ ' + '[m]': f'{ccx_manipulator.used_mesh.final_displacement_array[:, 1:][:, 1]}',  # Traženi pomaci
+            r'$dd_{j}$ ' + '[m]': f'{ccx_manipulator.used_mesh.current_displacement[:, 1][ccx_manipulator.final_displacement_node_positions]}',  # Dobiveni pomaci
+            'O:': candidates
+            #r'$Volumen$': f'{candidates[0].O[0]}',
+            #r'$x error$': f'{candidates[0].O[1]}',
+            #r'$y error$ ': f'{candidates[0].O[2]}'
+        }
+
+        drawer.make_drawing(kljesta_info,
+                            ccx_manipulator.used_mesh.current_displacement,
+                            ccx_manipulator.used_mesh.current_stress,
+                            (51e6, 0),
+                            displacement_scale=1,
+                            beam_names=False)
+        drawer.my_ax.set_title('Rezultati optimizacije')
+        drawer.save_drawing(f'best_{it}')
+
+
     # Remove candidates' directories
     for c in candidates:
         shutil.rmtree(f'{test_dir}/{c.unique_str}')
-
 
     return
 
@@ -257,18 +288,18 @@ if True:
     optimizer.post_iteration_processing = post_iteration_processing
     results = optimizer.optimize()
     print(results)
-    
+
     optimizer.results.plot_convergence()
     axes = plt.gcf().axes
     # axes[0].set_yscale('log')
     # axes[1].set_yscale('symlog')
     plt.savefig('optimization.png')
-    
+
     x0 = results.X
 
 if False:
-    
-    opt = minimize(eval_penalty, x0, 
+
+    opt = minimize(eval_penalty, x0,
                    method='SLSQP',
                    tol=1e-12,
                    bounds=[_lbub for _lbub in zip(optimizer.lb, optimizer.ub)],

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-'''
-   >==>    >===>>=>>==>
+''' >==>    >===>>=>>==>
  >=>       >=>  >>  >=>
 >=>        >=>  >>  >=>
  >=>       >=>  >>  >=>
@@ -446,9 +445,9 @@ class calculix_manipulator():
             self
     ):
         self.translate_mesh()
-        self.calculated_displacement = np.empty((0, self._no_of_used_nodes, 2),
+        self.calculated_displacement = np.empty((0, self.used_mesh.node_array.shape[0], 2),
                                                 dtype=float)
-        self.calculated_stress = np.empty((0, self._no_of_used_nodes, 6),
+        self.calculated_stress = np.empty((0, self.used_mesh.node_array.shape[0], 6),
                                           dtype=float)
 
         directory_iteration_array = np.empty(0, dtype=int)
