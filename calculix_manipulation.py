@@ -271,6 +271,8 @@ class calculix_manipulator():
             displacement_list = []
             stress_list = []
 
+            used_nodes_id_list = []
+
             displacement_array = np.empty(shape=(0, 3),
                                           dtype=np.float64)
             stress_array = np.empty(shape=(0, 6),
@@ -294,6 +296,9 @@ class calculix_manipulator():
                     stress_section = False
 
                 if displacement_section:
+                    if not 'DISP' in line and not 'D1' in line and not 'D2' in line and not 'D3' in line and not 'ALL' in line:
+                        node_id = int(line.strip()[2:12].strip()) - 1
+                        used_nodes_id_list.append(node_id)
                     displacement_list.append(
                         ccx_output_string_formatter(
                             line.strip()[12:]
@@ -345,11 +350,11 @@ class calculix_manipulator():
                     )
             ) / np.sqrt(2)
             return (displacement_array[:, :-1][-self._no_of_used_nodes:],
-                    von_mises_eq_stress)
+                    von_mises_eq_stress), used_nodes_id_list
 
         else:
             return (displacement_array[:, :-1][-self._no_of_used_nodes:],
-                    stress_array[-self._no_of_used_nodes:])
+                    stress_array[-self._no_of_used_nodes:]), used_nodes_id_list
 
     def run_ccx(self,
                 ccx_case_name: str,
@@ -374,7 +379,7 @@ class calculix_manipulator():
             if line.startswith(' *ERROR') or len(err) != 0:
                 return False  # U slučaju propale analize
 
-        results = self.read_results(
+        results, used_nodes_read = self.read_results(
             ccx_file_path,
             von_mises=von_mises_instead_of_principal
         )
@@ -384,7 +389,7 @@ class calculix_manipulator():
         if delete_after_completion:
             rmtree(ccx_file_path)
 
-        return results  # U slučaju uspješne analize
+        return results, used_nodes_read  # U slučaju uspješne analize
 
     def load_from_info(self,
                        widths_size=None,

@@ -19,7 +19,7 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             5e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (12, 4), # Frame grid division
+                            (6, 2), # Frame grid division
                             'x' # Frame grid additional support
                             )
 
@@ -130,7 +130,7 @@ def min_fun(beam_widths, unique_str=None, debug=False):
         shutil.rmtree(f'ccx_files/{unique_str}')
 
     ccx_manipulator.used_mesh.beam_width_array[used_beams] = beam_widths
-    ccx_results = ccx_manipulator.run_ccx(
+    ccx_results, used_nodes_read = ccx_manipulator.run_ccx(
         unique_str,
         von_mises_instead_of_principal=False
     )
@@ -151,14 +151,14 @@ def min_fun(beam_widths, unique_str=None, debug=False):
             print('!' * 20)
             # input('Press return to continue.')
 
-        np.savez_compressed(f'ccx_files/{unique_str}/data.npz', displacement=displacement, vm_stress=vm_stress)
+        np.savez_compressed(f'ccx_files/{unique_str}/data.npz', displacement=displacement, vm_stress=vm_stress, used_nodes_read=used_nodes_read)
         # ccx_manipulator.used_mesh.current_displacement = displacement
         # ccx_manipulator.used_mesh.current_stress = vm_stress
 
         errors = u_calc - u_goal
 
         y_err_diff = np.abs(errors[0, 1] - errors[1, 1]) / np.average(np.abs(u_goal[:, 1]))
-        
+
         m = np.abs(u_goal) > 0
         errors[m] = np.abs(errors[m] / u_goal[m])
 
@@ -166,7 +166,7 @@ def min_fun(beam_widths, unique_str=None, debug=False):
         # y_err = np.sum(errors[:, 1]**2) #/ 25e-3 #* 2
         x_err = np.average(errors[:, 0]) #/ 100e-3 #* 6
         y_err = np.average(errors[:, 1]) #/ 25e-3 #* 2
-        
+
         if debug:
             print(f'{u_goal=}')
             print(f'{u_calc=}')
@@ -222,7 +222,7 @@ optimizer.monitoring = 'dashboard'
 
 valid = False
 while not valid:
-    x0 = optimizer.ub * 0.5
+    x0 = optimizer.ub * 0.2
     # x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
     # x0[129] = 0
     #x0 = np.random.random(dims) * 4e-3 + 1.8e-3
@@ -237,6 +237,7 @@ test_dir = './ccx_files'
 
 # postavke animacije
 drawer = cv.mesh_drawer()
+drawer.from_object(mesh)
 drawer.my_figure.suptitle('Optimizacija kljesta')
 
 
@@ -264,37 +265,41 @@ def post_iteration_processing(it, candidates, best):
             log.write(f'{it:6d} X:[{X}], O:[{O}], C:[{C}]' +
                       f' fitness:{candidates[0].f:13.6e}\n')
 
-        # Remove the best from candidates
-        # (since its directory is already renamed)
-        candidates = np.delete(candidates, 0)
 
-        drawer.from_object(mesh)
+
+
         drawer.my_ax.clear()
         drawer.my_info_ax.clear()
 
         npz = np.load(f'{test_dir}/best_it{it}/data.npz')
-        
+
         kljesta_info = {
             'Iteracija': int(it),
             'h ' + '[m]': f'{mesh.beam_height:.5E}',
             r'$dt_{j}$ ' + '[m]': f'{ccx_manipulator.used_mesh.final_displacement_array[:, 1:][:, 1]}',  # Traženi pomaci
             r'$dd_{j}$ ' + '[m]': f'{npz["displacement"][:, 1][ccx_manipulator.final_displacement_node_positions]}',  # Dobiveni pomaci
-            'O:': candidates
+            'O:': candidates[0].O
             #r'$Volumen$': f'{candidates[0].O[0]}',
             #r'$x error$': f'{candidates[0].O[1]}',
             #r'$y error$ ': f'{candidates[0].O[2]}'
         }
 
+        ccx_manipulator.used_mesh.beam_width_array[used_beams] = candidates[0].X
 
         drawer.make_drawing(kljesta_info,
+                            ccx_manipulator.used_mesh,
                             npz['displacement'],
                             npz['vm_stress'],
+                            npz['used_nodes_read'],
                             (51e6, 0),
                             displacement_scale=1,
                             beam_names=False)
         drawer.my_ax.set_title('Rezultati optimizacije')
         drawer.save_drawing(f'best_{it}')
 
+    # Remove the best from candidates
+    # (since its directory is already renamed)
+    candidates = np.delete(candidates, 0)
 
     # Remove candidates' directories
     for c in candidates:
@@ -317,10 +322,10 @@ if True:
     x0 = results.X
 
 if False:
-    
+
     bounds = [_lbub for _lbub in zip(optimizer.lb, optimizer.ub)]
     print(f'{bounds=}')
-    opt = minimize(eval_penalty, x0, 
+    opt = minimize(eval_penalty, x0,
                    method='SLSQP',
                    bounds=bounds,
                     options={'eps':1e-4, # dx_i precision

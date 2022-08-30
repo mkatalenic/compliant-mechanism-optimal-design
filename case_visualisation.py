@@ -27,7 +27,7 @@ import calculix_manipulation as cm
 
 class mesh_drawer():
 
-    my_figure = plt.figure(dpi=400, figsize=(12, 6))
+    my_figure = plt.figure(dpi=200, figsize=(12, 3))
     subfigs = my_figure.subfigures(1, 2, wspace=0.02, width_ratios=[2, 1])
     my_ax = subfigs[0].add_subplot(1, 1, 1)
     my_info_ax = subfigs[1].add_subplot(1, 1, 1)
@@ -45,8 +45,10 @@ class mesh_drawer():
 
     def make_drawing(self,
                      info_dict: dict,
+                     used_mesh=None,
                      displacement=None,
                      stress=None,
+                     used_nodes_idx=None,
                      stress_max_min=(None, None),
                      displacement_scale=1,
                      beam_names=False):
@@ -68,8 +70,7 @@ class mesh_drawer():
         info_table = self.my_info_ax.table(cellText=text_array,
                                            loc='upper center',
                                            cellColours=cellcolours,
-                                           edges='closed',
-                                           fontsize=14)
+                                           edges='closed')
 
         info_table.animated = True
 
@@ -92,19 +93,11 @@ class mesh_drawer():
         used_beams = np.array(
             [i for i, _ in enumerate(
                 self.used_mesh.beam_width_array
-            ) if _ != 0]
+            ) if float(_) != 0.]
         )
 
-        used_nodes = np.empty((0),
-                              dtype=np.int32)
+        used_nodes = used_nodes_idx
 
-        for beam_idx in used_beams:
-            used_nodes = np.append(
-                used_nodes,
-                self.used_mesh._fetch_beam_nodes(beam_idx)
-            )
-
-        used_nodes = np.unique(used_nodes)
 
         if displacement is None:
             displacement = np.zeros((np.size(used_nodes), 2))
@@ -132,8 +125,12 @@ class mesh_drawer():
                                         location='bottom',
                                         aspect=30)
 
-            all_nodes_stress = np.zeros_like(self.used_mesh.node_array[:, 0])
-            all_nodes_stress[used_nodes] = cm.calculate_von_mises_stress(stress)
+            all_nodes_stress = np.zeros(self.used_mesh.node_array.shape[0])
+            print(f'{all_nodes_stress.shape=}')
+            print(f'{stress.shape=}')
+            print(f'{displacement.shape=}')
+            print(f'{used_nodes.shape=}')
+            all_nodes_stress[used_nodes] += cm.calculate_von_mises_stress(stress)
 
         all_nodes_coordinates = np.zeros_like(self.used_mesh.node_array)
         all_nodes_coordinates[used_nodes] = displacement * displacement_scale
@@ -255,7 +252,7 @@ class mesh_drawer():
 
         self.my_info_ax.set_axis_off()
 
-        self.my_info_ax.set_title('INFO'.center(40, ':'),
+        self.my_info_ax.set_title('INFO'.center(60, ':'),
                                   loc='center')
 
     def save_drawing(self,
@@ -280,5 +277,4 @@ class mesh_drawer():
                 'img',
                 f'{name}.jpg'
             ),
-            dpi=100,
-            bbox_inches='tight')
+            dpi=200)
