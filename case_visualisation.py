@@ -24,7 +24,7 @@ import matplotlib.collections as mcoll
 import geometry_creation as gc
 import calculix_manipulation as cm
 
-
+plt.style.use('dark_background') 
 class mesh_drawer():
 
     my_figure = plt.figure(dpi=200, figsize=(12, 3))
@@ -32,6 +32,7 @@ class mesh_drawer():
     my_ax = subfigs[0].add_subplot(1, 1, 1)
     my_info_ax = subfigs[1].add_subplot(1, 1, 1)
     my_ax.set_aspect('equal')
+   
     make_drawing_counter = 0
 
     @classmethod
@@ -109,7 +110,7 @@ class mesh_drawer():
                             undeformed_node_coordinates[nodes_per_beam][:, 1],
                             linewidth=0.1,
                             alpha=0.7,
-                            color='black',
+                            color='white',
                             zorder=-1)
 
         if stress is not None:
@@ -126,10 +127,10 @@ class mesh_drawer():
                                         aspect=30)
 
             all_nodes_stress = np.zeros(self.used_mesh.node_array.shape[0])
-            print(f'{all_nodes_stress.shape=}')
-            print(f'{stress.shape=}')
-            print(f'{displacement.shape=}')
-            print(f'{used_nodes.shape=}')
+            # print(f'{all_nodes_stress.shape=}')
+            # print(f'{stress.shape=}')
+            # print(f'{displacement.shape=}')
+            # print(f'{used_nodes.shape=}')
             all_nodes_stress[used_nodes] += cm.calculate_von_mises_stress(stress)
 
         all_nodes_coordinates = np.zeros_like(self.used_mesh.node_array)

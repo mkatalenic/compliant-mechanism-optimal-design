@@ -19,12 +19,12 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             5e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (12, 4), # Frame grid division
+                            (6, 2), # Frame grid division
                             'x' # Frame grid additional support
                             )
 
-mesh.minimal_beam_width = 5e-4 # (variable thickness) Beams with lower widths are removed
 mesh.beam_height = 8e-3 # z thickenss (fixed)
+mesh.minimal_beam_width = 1e-6 # (variable thickness) Beams with lower widths are removed
 
 # Beam thickness initialization (in order to calculate refernt volume)
 mesh.set_width_array(
@@ -71,6 +71,7 @@ for node in mesh.node_laso(
         only_main_nodes=True):
     mesh.create_boundary(node, (0, 1, 1), set_unremovable=False)
 
+# Symetry BC for Load node
 # Set down-left corner BC (u_x=0, u_y=0) and unremovable
 mesh.create_boundary(
     (0, 0),
@@ -84,7 +85,12 @@ mesh.create_boundary(
     (1, 1, 0),
     set_unremovable=True
 )
-
+# Set up-mid BC (u_x=0, u_y=0) and unremovable
+mesh.create_boundary(
+    (50e-3, 25e-3),
+    (1, 1, 0),
+    set_unremovable=True
+)
 # mesh.create_initial_displacement(
 #     (0, 0),
 #     (5e-3, 0)
@@ -92,7 +98,17 @@ mesh.create_boundary(
 
 mesh.create_force(
     (0, 0), # x, y
-    (100, 0) # F_x, F_y
+    (-100, 0) # F_x, F_y
+)
+
+# Reaction forces
+mesh.create_force(
+    (5/6*100e-3, 12.5e-3), # x, y
+    (0, 5) # F_x, F_y
+)
+mesh.create_force(
+    (100e-3, 12.5e-3), # x, y
+    (0, 5) # F_x, F_y
 )
 
 # mesh.set_final_displacement(
@@ -160,12 +176,16 @@ def min_fun(beam_widths, unique_str=None, debug=False):
         y_err_diff = np.abs(errors[0, 1] - errors[1, 1]) / np.average(np.abs(u_goal[:, 1]))
 
         m = np.abs(u_goal) > 0
-        errors[m] = np.abs(errors[m] / u_goal[m])
+        errors[m] = errors[m] / u_goal[m]
+        
+        errors = np.abs(errors)
 
         # x_err = np.sum(errors[:, 0]**2) #/ 100e-3 #* 6
         # y_err = np.sum(errors[:, 1]**2) #/ 25e-3 #* 2
         x_err = np.average(errors[:, 0]) #/ 100e-3 #* 6
         y_err = np.average(errors[:, 1]) #/ 25e-3 #* 2
+
+        stress_cnstr = vm_stress.max() - 10e6 # <= 0
 
         if debug:
             print(f'{u_goal=}')
@@ -174,28 +194,28 @@ def min_fun(beam_widths, unique_str=None, debug=False):
             # print(f'{displacement=}')
             # print(f'{ccx_manipulator.final_displacement_node_positions=}')
 
-        return volume, x_err, y_err, y_err_diff, 0
+        return volume, x_err, y_err, y_err_diff, 0, stress_cnstr
 
     else:
-        return np.nan, np.nan, np.nan, np.nan, 1
+        return np.nan, np.nan, np.nan, np.nan, 1, 0
 
 
 dims = np.size(used_beams)
 optimizer = GGS()
 optimizer.dimensions = dims
-optimizer.lb = np.ones((optimizer.dimensions)) * 0
-optimizer.ub = np.ones((optimizer.dimensions)) * 10 * 1e-3
+optimizer.lb = 0 * 1e-3
+optimizer.ub = 20 * 1e-3
 optimizer.iterations = 5000
 optimizer.maximum_evaluations = 200000
 
 optimizer.evaluation_function = min_fun
 optimizer.objectives = 4
-optimizer.objective_labels = ['vol', 'x_err', 'y_err', 'y_err_std']
+optimizer.objective_labels = ['vol', 'x_err', 'y_err', 'y_err_diff']
 # optimizer.objective_weights = [0.001, 0.001, 0.99, 0.008]
 # optimizer.objective_weights = [0, 0, 0.99, 0.01] # Ovo radi vrlo dobro
-optimizer.objective_weights = [1e-6, 1e-6, 1, 0.1]
-optimizer.constraints = 1
-optimizer.constraint_labels = ['invalid_sim']
+optimizer.objective_weights = [1e-3, 0, 1, 1]
+optimizer.constraints = 2
+optimizer.constraint_labels = ['invalid_sim', 'stress']
 
 # optimizer.safe_evaluation = True
 optimizer.params['n'] = 101
@@ -210,9 +230,10 @@ optimizer.number_of_processes = 'maximum'
 optimizer.forward_unique_str = True
 optimizer.monitoring = 'dashboard'
 
+
 valid = False
 while not valid:
-    x0 = optimizer.ub * 0.2
+    x0 = np.full(optimizer.dimensions, optimizer.ub * 0.2)
     # x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
     # x0[129] = 0
     #x0 = np.random.random(dims) * 4e-3 + 1.8e-3
@@ -281,7 +302,7 @@ def post_iteration_processing(it, candidates, best):
                             npz['displacement'],
                             npz['vm_stress'],
                             npz['used_nodes_read'],
-                            (51e6, 0),
+                            (10e6, 0),
                             displacement_scale=1,
                             beam_names=False)
         drawer.my_ax.set_title('Rezultati optimizacije')

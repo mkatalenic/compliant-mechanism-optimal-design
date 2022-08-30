@@ -377,14 +377,14 @@ class calculix_manipulator():
 
         for line in str(out).replace('\\n', '\n').split('\n'):
             if line.startswith(' *ERROR') or len(err) != 0:
-                return False  # U slučaju propale analize
+                return False, False  # U slučaju propale analize
 
         results, used_nodes_read = self.read_results(
             ccx_file_path,
             von_mises=von_mises_instead_of_principal
         )
         if results is False:
-            return False
+            return False, False
 
         if delete_after_completion:
             rmtree(ccx_file_path)
