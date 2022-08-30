@@ -8,7 +8,7 @@ import numpy as np
 
 sys.path.append("..")
 
-from indago import GGS, PSO
+from indago import GGS, PSO, FWA
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 import geometry_creation as gc
@@ -19,11 +19,11 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             5e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (6, 2), # Frame grid division
+                            (12, 4), # Frame grid division
                             'x' # Frame grid additional support
                             )
 
-mesh.minimal_beam_width = 2e-4 # (variable thickness) Beams with lower widths are removed
+mesh.minimal_beam_width = 5e-4 # (variable thickness) Beams with lower widths are removed
 mesh.beam_height = 8e-3 # z thickenss (fixed)
 
 # Beam thickness initialization (in order to calculate refernt volume)
@@ -32,9 +32,8 @@ mesh.set_width_array(
         np.shape(
             mesh.beam_array
         )[0]
-    ) * 5e-3
+    ) * 10e-3
 )
-max_volume = mesh.calculate_mechanism_volume()
 
 # Remove unwanted beams (removes beam inside of polygon)
 removed_beams = mesh.beam_laso(
@@ -54,18 +53,32 @@ used_beams = [
     x for x in range(mesh.beam_array.shape[0]) if x not in removed_beams
 ]
 
+# Referent volume calculation
+w = np.full(mesh.beam_array.shape[0], 0, dtype=float)
+w[used_beams] = 10e-3
+mesh.set_width_array(w)
+max_volume = mesh.calculate_mechanism_volume()
+
+
 # Create symetry boundary condition (u_y=0, u_zz=0) and make nodes unremovable
 for node in mesh.node_laso(
         [
-            (-1e-3, 1e-3),
+            (1e-3, 1e-3),
             (51e-3, 1e-3),
             (51e-3, -1e-3),
-            (-1e-3, -1e-3)
+            (1e-3, -1e-3)
         ],
         only_main_nodes=True):
-    mesh.create_boundary(node, (0, 1, 1), set_unremovable=True)
+    mesh.create_boundary(node, (0, 1, 1), set_unremovable=False)
 
-# Set corner BC (u_x=0, u_y=0) and unremovable
+# Set down-left corner BC (u_x=0, u_y=0) and unremovable
+mesh.create_boundary(
+    (0, 0),
+    (0, 1, 1),
+    set_unremovable=True
+)
+
+# Set up-left corner BC (u_x=0, u_y=0) and unremovable
 mesh.create_boundary(
     (0, 25e-3),
     (1, 1, 0),
@@ -181,8 +194,8 @@ optimizer = GGS()
 optimizer.dimensions = dims
 optimizer.lb = np.ones((optimizer.dimensions)) * 0
 optimizer.ub = np.ones((optimizer.dimensions)) * 10 * 1e-3
-optimizer.iterations = 1000
-optimizer.maximum_evaluations = 20000
+optimizer.iterations = 5000
+optimizer.maximum_evaluations = 200000
 
 optimizer.evaluation_function = min_fun
 optimizer.objectives = 3
@@ -192,7 +205,7 @@ optimizer.constraints = 1
 optimizer.constraint_labels = ['valid_sim']
 
 # optimizer.safe_evaluation = True
-optimizer.params['n'] = 51
+optimizer.params['n'] = 101
 optimizer.params['k_max'] = 2
 
 optimizer.eval_fail_behavior = 'ignore'
@@ -206,7 +219,7 @@ optimizer.monitoring = 'dashboard'
 
 valid = False
 while not valid:
-    x0 = optimizer.ub * 0.8
+    x0 = optimizer.ub #* 0.5
     # x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
     # x0[129] = 0
     #x0 = np.random.random(dims) * 4e-3 + 1.8e-3
@@ -298,11 +311,15 @@ if True:
     x0 = results.X
 
 if False:
-
-    opt = minimize(eval_penalty, x0,
+    
+    bounds = [_lbub for _lbub in zip(optimizer.lb, optimizer.ub)]
+    print(f'{bounds=}')
+    opt = minimize(eval_penalty, x0, 
                    method='SLSQP',
-                   tol=1e-12,
-                   bounds=[_lbub for _lbub in zip(optimizer.lb, optimizer.ub)],
-                   options={'eps':1e-4,
-                            'ftol':1e-12,}
+                   bounds=bounds,
+                    options={'eps':1e-4, # dx_i precision
+                             'ftol':1e-20,
+                             # 'gtol':1e-20,
+                   }
                    )
+    print(opt)
