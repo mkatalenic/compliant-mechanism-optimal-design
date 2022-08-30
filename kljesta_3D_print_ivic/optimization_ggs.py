@@ -179,18 +179,6 @@ def min_fun(beam_widths, unique_str=None, debug=False):
     else:
         return np.nan, np.nan, np.nan, np.nan, 1
 
-def eval_penalty(beam_widths, debug=False):
-
-    unique_str = generateRandomAlphaNumericString(20)
-    volume, x_err, y_err, y_err_std, valid = min_fun(beam_widths, unique_str, debug)
-    fit = volume * 0.001 + x_err + x_err * 0.001 + y_err * 0.998
-
-    print(beam_widths)
-    print(volume, x_err, y_err, valid, fit)
-    if valid:
-        return fit
-    else:
-        return 1e10
 
 dims = np.size(used_beams)
 optimizer = GGS()
@@ -203,9 +191,10 @@ optimizer.maximum_evaluations = 200000
 optimizer.evaluation_function = min_fun
 optimizer.objectives = 4
 optimizer.objective_labels = ['vol', 'x_err', 'y_err', 'y_err_std']
-optimizer.objective_weights = [0.001, 0.001, 0.99, 0.008]
+# optimizer.objective_weights = [0.001, 0.001, 0.99, 0.008]
+optimizer.objective_weights = [0, 0, 0.99, 0.01]
 optimizer.constraints = 1
-optimizer.constraint_labels = ['valid_sim']
+optimizer.constraint_labels = ['invalid_sim']
 
 # optimizer.safe_evaluation = True
 optimizer.params['n'] = 101
@@ -228,8 +217,8 @@ while not valid:
     #x0 = np.random.random(dims) * 4e-3 + 1.8e-3
     if os.path.exists('ccx_files/x0'):
         shutil.rmtree('ccx_files/x0')
-    r = min_fun(x0, 'x0', debug=True)
-    print(r)
+    r = min_fun(x0, 'x0', debug=False)
+    # print(r)
     valid = not r[4]
 
 # input('Press return to continue.')
@@ -321,16 +310,68 @@ if True:
 
     x0 = results.X
 
-if False:
 
+
+
+
+
+
+
+
+
+"""
+SCIPY minimize
+"""
+
+def eval_penalty(beam_widths, debug=False):
+
+    unique_str = 'sim_' + generateRandomAlphaNumericString(20)
+    volume, x_err, y_err, y_err_diff, invalid = min_fun(beam_widths, unique_str, debug)
+    
+    
+    fit = volume * 0.001 + x_err + x_err * 0.001 + y_err * 0.997 + y_err_diff * 0.001
+    if invalid:
+        fit = 1e10
+        print(f'Invalid simulation in {unique_str}')
+        print(beam_widths)
+        np.savez_compressed(f'debug_{unique_str}.npz', x=beam_widths)
+        input('Pres return to continue')
+        
+    print(beam_widths)
+    print([volume, x_err, y_err, y_err_diff], invalid, fit)
+    
+    # Remove candidates' directories
+    if os.path.exists(f'{test_dir}/{unique_str}'):
+        shutil.rmtree(f'{test_dir}/{unique_str}')
+        
+    return fit
+        
+if False:
+    # SLSQP
     bounds = [_lbub for _lbub in zip(optimizer.lb, optimizer.ub)]
-    print(f'{bounds=}')
-    opt = minimize(eval_penalty, x0,
+    # print(f'{bounds=}')
+    opt = minimize(eval_penalty, x0, 
                    method='SLSQP',
                    bounds=bounds,
-                    options={'eps':1e-4, # dx_i precision
-                             'ftol':1e-20,
-                             # 'gtol':1e-20,
+                   options={'eps': 1e-4, # dx_i precision
+                            'ftol': 1e-20,
+                            'disp': True,
+                            'maxiter': 20000,
                    }
                    )
+    print(opt)
+
+if False:
+    # L-BFGS-B
+    bounds = [_lbub for _lbub in zip(optimizer.lb, optimizer.ub)]
+    # print(f'{bounds=}')
+    opt = minimize(eval_penalty, x0, 
+                   method='L-BFGS-B',
+                   bounds=bounds,
+                   options={'eps': 1e-4, # dx_i precision
+                            'gtol': 1e-50,
+                            'ftol': 1e-50,
+                            'maxcor': 50,
+                            'makls': 20,
+                   })
     print(opt)
