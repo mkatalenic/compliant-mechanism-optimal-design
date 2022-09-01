@@ -25,10 +25,10 @@ if os.path.exists('mesh_setup.pkl'):
     os.remove('mesh_setup.pkl')
 
 mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
-                            5e-3, # Maximum element size
+                            2e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (6, 2), # Frame grid division
+                            (12, 4), # Frame grid division
                             'x' # Frame grid additional support
                             )
 
@@ -88,12 +88,12 @@ mesh.create_boundary(
     set_unremovable=True
 )
 
-# # Set up-left corner BC (u_x=0, u_y=0) and unremovable
-# mesh.create_boundary(
-#     (0, 25e-3),
-#     (1, 1, 0),
-#     set_unremovable=True
-# )
+# Set up-left corner BC (u_x=0, u_y=0)
+mesh.create_boundary(
+    (0, 25e-3),
+    (1, 1, 0),
+    set_unremovable=False
+)
 
 # Set up-mid BC (u_x=0, u_y=0) and unremovable
 mesh.create_boundary(
@@ -101,53 +101,29 @@ mesh.create_boundary(
     (1, 1, 0),
     set_unremovable=True
 )
-# mesh.create_initial_displacement(
-#     (0, 0),
-#     (5e-3, 0)
-# )
 
+# Driving force
 mesh.create_force(
     (0, 0), # x, y
     (-100, 0) # F_x, F_y
 )
 
-# Reaction forces
-mesh.create_force(
-    (5/6*100e-3, 12.5e-3), # x, y
-    (0, 5) # F_x, F_y
-)
-mesh.create_force(
-    (100e-3, 12.5e-3), # x, y
-    (0, 5) # F_x, F_y
-)
+for node in mesh.node_laso(
+  [
+   (70e-3, 12.3e-3),
+   (70e-3, 12.6e-3),
+   (110e-3, 12.6e-3),
+   (110e-3, 12.3e-3)
+   ]
+):
+    # Reaction forces
+    mesh.create_force(node, (0, 5))
+    # Final disp
+    mesh.set_final_displacement(node, (0, -6.25e-3))
 
-# mesh.set_final_displacement(
-#     (2/3*100e-3, 0), # x, y
-#     (6e-3, 0) # u_x, u_y
-# )
-
-mesh.set_final_displacement(
-    (5/6*100e-3, 12.5e-3),
-    (0, -6.25e-3)
-)
-
-mesh.set_final_displacement(
-    (100e-3, 12.5e-3),
-    (0, -6.25e-3)
-)
 
 mesh.write_beginning_state()
 ccx_manipulator = cm.calculix_manipulator(mesh)
-
-import random
-import string
-
-def generateRandomAlphaNumericString(length):
-    # Generate alphanumeric string
-    letters = string.ascii_lowercase + string.digits
-    result_str = ''.join(random.choice(letters) for i in range(length))
-
-    return result_str
 
 def min_fun(beam_widths, unique_str=None, debug=False):
     #print(beam_widths)
@@ -165,7 +141,6 @@ def min_fun(beam_widths, unique_str=None, debug=False):
     if ccx_results:
         volume = ccx_manipulator.used_mesh.calculate_mechanism_volume() / max_volume
 
-        # Ovo mi baš nije sasvim jasno:
         displacement, vm_stress = ccx_results
         u_goal = ccx_manipulator.used_mesh.final_displacement_array[:, 1:]
         u_calc = displacement[ccx_manipulator.final_displacement_node_positions]
@@ -223,7 +198,7 @@ optimizer.objectives = 4
 optimizer.objective_labels = ['vol', 'x_err', 'y_err', 'y_err_diff']
 # optimizer.objective_weights = [0.001, 0.001, 0.99, 0.008]
 # optimizer.objective_weights = [0, 0, 0.99, 0.01] # Ovo radi vrlo dobro
-optimizer.objective_weights = [1e-3, 0, 1, 1]
+optimizer.objective_weights = [1e-2, 0, 1, 1]
 optimizer.constraints = 2
 optimizer.constraint_labels = ['invalid_sim', 'stress']
 
@@ -238,7 +213,7 @@ optimizer.eval_fail_behavior = 'ignore'
 optimizer.number_of_processes = 'maximum'
 
 optimizer.forward_unique_str = True
-optimizer.monitoring = 'basic'
+optimizer.monitoring = 'dashboard'
 
 
 valid = False
