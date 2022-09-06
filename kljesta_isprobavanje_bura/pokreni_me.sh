@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=GGS_optim
 #SBATCH --partition=computes_thin
-#SBATCH --ntasks=64
+#SBATCH --ntasks=48
 #SBATCH --mem-per-cpu=500M
 
 srun bash GGS.sh
