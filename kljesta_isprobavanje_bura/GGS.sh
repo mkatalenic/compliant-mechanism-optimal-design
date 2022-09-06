@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 
+no_divisions=10
 
 for ((i=1; i<=$no_divisions; i+=1))
 do
