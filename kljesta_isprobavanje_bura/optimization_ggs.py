@@ -220,7 +220,7 @@ optimizer.monitoring = 'dashboard'
 valid = False
 while not valid:
 
-    ub_perc = sys.argv[2]) / int(sys.argv[1])
+    ub_perc = int(sys.argv[2]) / int(sys.argv[1])
     x0 = np.full(optimizer.dimensions, optimizer.ub * ub_perc)
     # x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
     # x0[129] = 0
