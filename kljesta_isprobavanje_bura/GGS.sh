@@ -5,7 +5,7 @@ no_divisions=10
 for ((i=1; i<=$no_divisions; i+=1))
 do
     python optimization_ggs.py $no_divisions $i
-    ime='proba_'
+    ime='GGS_'
     ext='.tar.gz'
-    tar -cpzf $ime$i$ext "probni"
+    tar -cpzf $ime$i$ext "ccx_files" "img" "mesh_setup.pkl"
 done
