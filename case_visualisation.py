@@ -14,6 +14,7 @@ TODO prikaz naprezanja
 TODO prikaz funkcije cilja
 '''
 import os
+from shutil import copyfile
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,8 +29,10 @@ import calculix_manipulation as cm
 plt.style.use('dark_background')
 class mesh_drawer():
 
+    plt.rcParams['figure.constrained_layout.use'] = True
     my_figure = plt.figure(dpi=400, figsize=(10, 10))
-    subfigs = my_figure.subfigures(2, 1, wspace=0.02, height_ratios=[2, 1])
+    my_figure.suptitle('Optimizacija podatljivog mehanizma')
+    subfigs = my_figure.subfigures(2, 1, wspace=0.02, height_ratios=[1, 1])
 
     upper_subfig = subfigs[0].subfigures(1,2,wspace=0.02,width_ratios=[2, 1])
     my_ax = upper_subfig[0].add_subplot(1, 1, 1)
@@ -76,7 +79,7 @@ class mesh_drawer():
         const_arr = self.constraints_tracker
         fit_arr = self.fitness_tracker
 
-        self.my_res_ax.set_xlabel('iteration')
+        self.my_res_ax.set_xlabel('Iteration')
         self.my_res_ax.set_ylabel('Value')
 
         prop_cycle = plt.rcParams['axes.prop_cycle']
@@ -84,13 +87,6 @@ class mesh_drawer():
         const_colors = colors[:const_arr.shape[1]]
         obj_colors = colors[const_arr.shape[1]:const_arr.shape[1] + obj_arr.shape[1]]
 
-        # for const_id in range(const_arr.shape[1]):
-        #     self.my_res_ax.plot(
-        #         it_arr,
-        #         const_arr[:,const_id],
-        #         color = const_colors[const_id],
-        #         label=f'C{const_id}'
-        #     )
         self.my_res_ax.tick_params(axis='y')
         for obj_id in range(obj_arr.shape[1]):
             self.my_res_ax.plot(
@@ -99,7 +95,7 @@ class mesh_drawer():
                 color = obj_colors[obj_id],
                 label=f'O{obj_id}'
             )
-        self.my_res_ax.legend(bbox_to_anchor=(1., 1.05), loc='lower right')
+        self.my_res_ax.legend(bbox_to_anchor=(.02, .02), loc='lower left')
 
         self.my_fitness_ax.set_ylabel('Fitness', color='red')  # we already handled the x-label with ax1
         self.my_fitness_ax.plot(it_arr,
@@ -108,6 +104,8 @@ class mesh_drawer():
         self.my_fitness_ax.tick_params(axis='y')
         self.my_fitness_ax.set_yscale('log')
         self.my_res_ax.set_yscale('log')
+
+        self.my_res_ax.set_title('Optimizacijski ciljevi / Fitness')
 
 
     def make_drawing(self,
@@ -141,6 +139,7 @@ class mesh_drawer():
 
         info_table.auto_set_font_size(False)
         info_table.set_fontsize(10)
+        self.my_info_ax.set_title('Informacije opt. problema', y=0.05, pad = 10)
 
         self.my_ax.grid(False)
 
@@ -194,16 +193,13 @@ class mesh_drawer():
             scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
 
             if self.make_drawing_counter == 1:
-                self.my_figure.colorbar(scalarMap,
+                cb = self.my_figure.colorbar(scalarMap,
                                         ax=self.my_ax,
                                         location='bottom',
                                         aspect=30)
+                cb.set_label('VonMisses stress [MPa]')
 
             all_nodes_stress = np.zeros(self.used_mesh.node_array.shape[0])
-            # print(f'{all_nodes_stress.shape=}')
-            # print(f'{stress.shape=}')
-            # print(f'{displacement.shape=}')
-            # print(f'{used_nodes.shape=}')
             all_nodes_stress[used_nodes] += cm.calculate_von_mises_stress(stress)
 
         all_nodes_coordinates = np.zeros_like(self.used_mesh.node_array)
@@ -211,13 +207,14 @@ class mesh_drawer():
         all_nodes_coordinates += self.used_mesh.node_array
 
         # Plot beams
+        ppd = 72./self.my_figure.dpi
+        trans = self.my_ax.transData.transform
+
         for beam, width in zip(used_beams,
                                self.used_mesh.beam_width_array[used_beams]):
 
             nodes_per_beam = self.used_mesh._fetch_beam_nodes(beam)
 
-            ppd = 20./self.my_figure.dpi
-            trans = self.my_ax.transData.transform
             lw = ((trans((1, width))-trans((0, 0)))*ppd)[1]
 
             if stress is not None:
@@ -258,31 +255,6 @@ class mesh_drawer():
                     horizontalalignment='center'
                 )
 
-
-        # Plot nodes and boundaries
-        for node in np.intersect1d(self.used_mesh.main_nodes, used_nodes):
-            if node in self.used_mesh.boundary_array[:, 0]:
-                DOF_to_print = str(
-                    self.used_mesh.boundary_array[
-                        self.used_mesh.boundary_array[:, 0] == node
-                    ][:, 1:]
-                )[2:-2]
-                self.my_ax.scatter(all_nodes_coordinates[node][0],
-                                   all_nodes_coordinates[node][1],
-                                   s=300,
-                                   color='green',
-                                   marker=f'${DOF_to_print}$',
-                                   edgecolor='red',
-                                   zorder=1)
-            # else:
-            #     self.my_ax.scatter(all_nodes_coordinates[node][0],
-            #                        all_nodes_coordinates[node][1],
-            #                        s=30,
-            #                        color='green',
-            #                        marker='o',
-            #                        edgecolor='red',
-            #                        zorder=1)
-
         # Plot forces
         for force in self.used_mesh.force_array:
             resultant_force = np.sqrt(np.sum(force[1:]**2))
@@ -302,16 +274,11 @@ class mesh_drawer():
                              - dx,
                              - dy,
                              width=arrow_width,
-                             head_width=arrow_width * 1.5,
+                             head_width=arrow_width * 1.8,
                              length_includes_head=True,
-                             color='red')
-
-#             self.my_ax.text(f'{resultant_force:.2f}',
-#                                 xy=(all_nodes_coordinates[int(force[0])][0],
-#                                     all_nodes_coordinates[int(force[0])][1]),
-#                                 xytext=(dx/2,
-#                                         dy/2),
-#                                 textcoords='offset points')
+                             color='purple',
+                             alpha=0.8,
+                             zorder=1)
 
         # Plot initial displacement
         for init_disp in self.used_mesh.initial_displacement_array:
@@ -321,10 +288,81 @@ class mesh_drawer():
                              init_disp[2],
                              width=0.05,
                              head_width=0.3,
-                             color='red',
-                             zorder=0)
+                             color='pink',
+                             alpha=0.8,
+                             zorder=1)
+
+        # Plot nodes and boundaries
+        for node in np.intersect1d(self.used_mesh.main_nodes, used_nodes):
+            if node in self.used_mesh.boundary_array[:, 0]:
+                DOF_to_print = str(
+                    self.used_mesh.boundary_array[
+                        self.used_mesh.boundary_array[:, 0] == node
+                    ][:, 1:]
+                )[2:-2]
+                self.my_ax.scatter(all_nodes_coordinates[node][0],
+                                   all_nodes_coordinates[node][1],
+                                   s=100,
+                                   color='green',
+                                   marker=f'${DOF_to_print}$',
+                                   edgecolor='red',
+                                   zorder=1)
+
+            elif node in self.used_mesh.final_displacement_array[:, 0]:
+
+                _, dx, dy = self.used_mesh.final_displacement_array[
+                    self.used_mesh.final_displacement_array[:, 0] == node
+                ][0]
+
+                self.my_ax.scatter(undeformed_node_coordinates[node][0] + dx,
+                                   undeformed_node_coordinates[node][1] + dy,
+                                   s=30,
+                                   color='green',
+                                   marker='o',
+                                   edgecolor='red',
+                                   zorder=1)
+
+                self.my_ax.scatter(all_nodes_coordinates[node][0],
+                                   all_nodes_coordinates[node][1],
+                                   s=30,
+                                   color='green',
+                                   marker='o',
+                                   edgecolor='white',
+                                   zorder=1)
+
+            else:
+                self.my_ax.scatter(all_nodes_coordinates[node][0],
+                                   all_nodes_coordinates[node][1],
+                                   s=20,
+                                   color='white',
+                                   marker='o',
+                                   edgecolor='purple',
+                                   zorder=1)
+
+        self.my_ax.set_title('Rezultati strukturalne simulacije')
 
         self.my_info_ax.set_axis_off()
+
+    def check_and_make_copies_best(self,
+                                   current_it: int):
+        all_imgs = os.listdir(
+            os.path.join(
+                os.getcwd(),
+                'img'
+            )
+        )
+
+        all_imgs_iter = [int(img_name.strip('.jpg').strip('best_'))
+                         for img_name in all_imgs]
+        all_imgs_iter.sort()
+
+        if all_imgs_iter[-1] != current_it - 1:
+
+            for it in range(all_imgs_iter[-1] + 1, current_it):
+                copyfile(
+                    os.path.join(os.getcwd(), 'img', f'best_{all_imgs_iter[-1]}.jpg'),
+                    os.path.join(os.getcwd(), 'img', f'best_{it}.jpg')
+                )
 
     def save_drawing(self,
                      name: str):

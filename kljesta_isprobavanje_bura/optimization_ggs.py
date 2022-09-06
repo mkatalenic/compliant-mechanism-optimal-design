@@ -28,7 +28,7 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             2e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (12, 4), # Frame grid division
+                            (6, 2), # Frame grid division
                             'x' # Frame grid additional support
                             )
 
@@ -189,8 +189,8 @@ dims = np.size(used_beams)
 optimizer = GGS()
 optimizer.dimensions = dims
 optimizer.lb = 0 * 1e-3
-optimizer.ub = 20 * 1e-3
-optimizer.iterations = 5000
+optimizer.ub = 10 * 1e-3
+optimizer.iterations = 1000
 optimizer.maximum_evaluations = 200000
 
 optimizer.evaluation_function = min_fun
@@ -214,11 +214,14 @@ optimizer.number_of_processes = 'maximum'
 
 optimizer.forward_unique_str = True
 optimizer.monitoring = 'dashboard'
+# optimizer.monitoring = 'basic'
 
 
 valid = False
 while not valid:
-    x0 = np.full(optimizer.dimensions, optimizer.ub * 0.2)
+
+    ub_perc = sys.argv[2]) / int(sys.argv[1])
+    x0 = np.full(optimizer.dimensions, optimizer.ub * ub_perc)
     # x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
     # x0[129] = 0
     #x0 = np.random.random(dims) * 4e-3 + 1.8e-3
@@ -234,8 +237,6 @@ test_dir = './ccx_files'
 # postavke animacije
 drawer = cv.mesh_drawer()
 drawer.from_object(mesh)
-drawer.my_figure.suptitle('Optimizacija kljesta')
-
 
 def post_iteration_processing(it, candidates, best):
     if candidates[0] <= best:
@@ -271,9 +272,10 @@ def post_iteration_processing(it, candidates, best):
         kljesta_info = {
             'Iteracija': int(it),
             'h ' + '[m]': f'{mesh.beam_height:.5E}',
-            r'$Volumen$': f'{candidates[0].O[0]:.5E}',
-            r'$x error$': f'{candidates[0].O[1]:.5E}',
-            r'$y error$ ': f'{candidates[0].O[2]:.5E}'
+            'Volumen': f'{candidates[0].O[0]*100:.2f}%',
+            'x error': f'{candidates[0].O[1]*100:.2f}%',
+            'y error': f'{candidates[0].O[2]*100:.2f}%',
+            'y error difference': f'{candidates[0].O[3]*100:.2f}%'
         }
 
         ccx_manipulator.used_mesh.beam_width_array[used_beams] = candidates[0].X
@@ -287,12 +289,13 @@ def post_iteration_processing(it, candidates, best):
                             displacement_scale=1,
                             beam_names=False)
 
-        drawer.my_ax.set_title('Rezultati strukturalne simulacije')
-
         drawer.plot_obj_constr_fitness(it,
                                        candidates[0].O,
                                        candidates[0].C,
                                        candidates[0].f)
+
+        if it != 0:
+            drawer.check_and_make_copies_best(it-1)
 
         drawer.save_drawing(f'best_{it}')
 
