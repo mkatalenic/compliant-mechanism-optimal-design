@@ -2,8 +2,8 @@
 
 #SBATCH --job-name=GGS_optim
 #SBATCH --partition=computes_thin
-#SBATCH --ntasks=48
-#SBATCH --mem-per-cpu=500M
+#SBATCH --ntasks=64
+#SBATCH --mem-per-cpu=2G
 
 no_divisions=10
 

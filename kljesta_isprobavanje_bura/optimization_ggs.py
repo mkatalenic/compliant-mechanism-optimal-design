@@ -28,7 +28,7 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             2e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (6, 2), # Frame grid division
+                            (12, 4), # Frame grid division
                             'x' # Frame grid additional support
                             )
 
