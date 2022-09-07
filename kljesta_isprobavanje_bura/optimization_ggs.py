@@ -190,7 +190,7 @@ optimizer = GGS()
 optimizer.dimensions = dims
 optimizer.lb = 0 * 1e-3
 optimizer.ub = 10 * 1e-3
-optimizer.iterations = 1000
+optimizer.iterations = 500
 optimizer.maximum_evaluations = 200000
 
 optimizer.evaluation_function = min_fun
@@ -293,9 +293,6 @@ def post_iteration_processing(it, candidates, best):
                                        candidates[0].O,
                                        candidates[0].C,
                                        candidates[0].f)
-
-        if it != 0:
-            drawer.check_and_make_copies_best(it-1)
 
         drawer.save_drawing(f'best_{it}')
 
