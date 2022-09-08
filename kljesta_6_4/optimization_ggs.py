@@ -131,11 +131,16 @@ def min_fun(beam_widths, unique_str=None, debug=False):
     if os.path.exists(f'ccx_files/{unique_str}'):
         shutil.rmtree(f'ccx_files/{unique_str}')
 
-    ccx_manipulator.used_mesh.beam_width_array[used_beams] = beam_widths
-    ccx_results, used_nodes_read = ccx_manipulator.run_ccx(
-        unique_str,
-        von_mises_instead_of_principal=False
-    )
+    w = np.full(mesh.beam_array.shape[0], 0, dtype=float)
+    w[used_beams] = beam_widths
+    if ccx_manipulator.used_mesh.set_width_array(w):
+
+        ccx_results, used_nodes_read = ccx_manipulator.run_ccx(
+            unique_str,
+            von_mises_instead_of_principal=False
+        )
+    else:
+        ccx_results = False
 
 
     if ccx_results:
@@ -278,7 +283,9 @@ def post_iteration_processing(it, candidates, best):
             'y error difference': f'{candidates[0].O[3]*100:.2f}%'
         }
 
-        ccx_manipulator.used_mesh.beam_width_array[used_beams] = candidates[0].X
+        w = np.full(mesh.beam_array.shape[0], 0, dtype=float)
+        w[used_beams] = candidates[0].X
+        ccx_manipulator.used_mesh.set_width_array(w)
 
         drawer.make_drawing(kljesta_info,
                             ccx_manipulator.used_mesh,
