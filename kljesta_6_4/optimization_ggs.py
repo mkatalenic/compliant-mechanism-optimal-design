@@ -54,9 +54,6 @@ removed_beams = mesh.beam_laso(
     ]
 )
 
-# Set thickness to zero for all beams
-mesh.set_width_array(np.zeros(mesh.beam_array.shape[0]))
-
 # Beam to be optimized (varying thickness)
 used_beams = [
     x for x in range(mesh.beam_array.shape[0]) if x not in removed_beams
@@ -126,7 +123,6 @@ mesh.write_beginning_state()
 ccx_manipulator = cm.calculix_manipulator(mesh)
 
 def min_fun(beam_widths, unique_str=None, debug=False):
-    #print(beam_widths)
 
     if os.path.exists(f'ccx_files/{unique_str}'):
         shutil.rmtree(f'ccx_files/{unique_str}')
@@ -134,7 +130,6 @@ def min_fun(beam_widths, unique_str=None, debug=False):
     w = np.full(mesh.beam_array.shape[0], 0, dtype=float)
     w[used_beams] = beam_widths
     if ccx_manipulator.used_mesh.set_width_array(w):
-
         ccx_results, used_nodes_read = ccx_manipulator.run_ccx(
             unique_str,
             von_mises_instead_of_principal=False
@@ -225,7 +220,7 @@ optimizer.monitoring = 'dashboard'
 valid = False
 while not valid:
 
-    ub_perc = int(sys.argv[2]) / int(sys.argv[1])
+    ub_perc = float(sys.argv[2]) / float(sys.argv[1])
     x0 = np.full(optimizer.dimensions, optimizer.ub * ub_perc)
     # x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
     # x0[129] = 0
