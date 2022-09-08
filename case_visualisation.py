@@ -343,8 +343,7 @@ class mesh_drawer():
 
         self.my_info_ax.set_axis_off()
 
-    def check_and_make_copies_best(self,
-                                   current_it: int):
+    def check_and_make_copies_best(self):
         all_imgs = os.listdir(
             os.path.join(
                 os.getcwd(),
@@ -356,11 +355,10 @@ class mesh_drawer():
                          for img_name in all_imgs]
         all_imgs_iter.sort()
 
-        if all_imgs_iter[-1] != current_it - 1:
-
-            for it in range(all_imgs_iter[-1] + 1, current_it):
+        for it in range(all_imgs_iter[-1]):
+            if it not in all_imgs_iter:
                 copyfile(
-                    os.path.join(os.getcwd(), 'img', f'best_{all_imgs_iter[-1]}.jpg'),
+                    os.path.join(os.getcwd(), 'img', f'best_{it-1}.jpg'),
                     os.path.join(os.getcwd(), 'img', f'best_{it}.jpg')
                 )
 
