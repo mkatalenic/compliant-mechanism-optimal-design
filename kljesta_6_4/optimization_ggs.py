@@ -280,8 +280,6 @@ def post_iteration_processing(it, candidates, best):
 
         ccx_manipulator.used_mesh.beam_width_array[used_beams] = candidates[0].X
 
-        drawer.check_and_make_copies_best()
-
         drawer.make_drawing(kljesta_info,
                             ccx_manipulator.used_mesh,
                             npz['displacement'],
@@ -297,6 +295,8 @@ def post_iteration_processing(it, candidates, best):
                                        candidates[0].f)
 
         drawer.save_drawing(f'best_{it}')
+
+        drawer.check_and_make_copies_best()
 
     # Remove the best from candidates
     # (since its directory is already renamed)
