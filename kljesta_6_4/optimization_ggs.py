@@ -213,15 +213,15 @@ optimizer.eval_fail_behavior = 'ignore'
 optimizer.number_of_processes = 'maximum'
 
 optimizer.forward_unique_str = True
-optimizer.monitoring = 'dashboard'
-# optimizer.monitoring = 'basic'
+# optimizer.monitoring = 'dashboard'
+optimizer.monitoring = 'basic'
 
 
 valid = False
+add = 0
 while not valid:
-
     ub_perc = float(sys.argv[2]) / float(sys.argv[1])
-    x0 = np.full(optimizer.dimensions, optimizer.ub * ub_perc)
+    x0 = np.full(optimizer.dimensions, optimizer.ub * ub_perc) + add
     # x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
     # x0[129] = 0
     #x0 = np.random.random(dims) * 4e-3 + 1.8e-3
@@ -229,6 +229,7 @@ while not valid:
         shutil.rmtree('ccx_files/x0')
     r = min_fun(x0, 'x0', debug=False)
     # print(r)
+    add+=1e-4
     valid = not r[4]
 
 # input('Press return to continue.')
@@ -311,6 +312,8 @@ def post_iteration_processing(it, candidates, best):
     return
 
 if True:
+    ub_perc = float(sys.argv[2]) / float(sys.argv[1])
+    x0 = np.full(optimizer.dimensions, optimizer.ub * ub_perc)
     optimizer.X0 = x0
     optimizer.post_iteration_processing = post_iteration_processing
     results = optimizer.optimize()
