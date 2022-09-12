@@ -25,6 +25,26 @@ import matplotlib.collections as mcoll
 import geometry_creation as gc
 import calculix_manipulation as cm
 
+from matplotlib.lines import Line2D
+
+class LineDataUnits(Line2D):
+    def __init__(self, *args, **kwargs):
+        _lw_data = kwargs.pop("linewidth", 1)
+        super().__init__(*args, **kwargs)
+        self._lw_data = _lw_data
+
+    def _get_lw(self):
+        if self.axes is not None:
+            ppd = 72./self.axes.figure.dpi
+            trans = self.axes.transData.transform
+            return ((trans((1, self._lw_data))-trans((0, 0)))*ppd)[1]
+        else:
+            return 1
+
+    def _set_lw(self, lw):
+        self._lw_data = lw
+
+    _linewidth = property(_get_lw, _set_lw)
 
 plt.style.use('dark_background')
 class mesh_drawer():
@@ -207,33 +227,31 @@ class mesh_drawer():
         all_nodes_coordinates += self.used_mesh.node_array
 
         # Plot beams
-        ppd = 72./self.my_figure.dpi
-        trans = self.my_ax.transData.transform
 
         for beam, width in zip(used_beams,
                                self.used_mesh.beam_width_array[used_beams]):
 
             nodes_per_beam = self.used_mesh._fetch_beam_nodes(beam)
 
-            lw = ((trans((1, width))-trans((0, 0)))*ppd)[1]
-
             if stress is not None:
-                lc = mcoll.LineCollection(
-                    [all_nodes_coordinates[nodes_per_beam]],
-                    linewidths=lw,
-                    colors=scalarMap.to_rgba(all_nodes_stress[nodes_per_beam]),
+                line = LineDataUnits(
+                    all_nodes_coordinates[nodes_per_beam][:, 0],
+                    all_nodes_coordinates[nodes_per_beam][:, 1],
+                    linewidth=width,
+                    color=scalarMap.to_rgba(np.average(all_nodes_stress[nodes_per_beam])),
                     zorder=1
                 )
 
             else:
-                lc = mcoll.LineCollection(
-                    [all_nodes_coordinates[nodes_per_beam]],
-                    linewidths=lw,
-                    colors=['black' for _ in nodes_per_beam],
+                line = LineDataUnits(
+                    all_nodes_coordinates[nodes_per_beam][:, 0],
+                    all_nodes_coordinates[nodes_per_beam][:, 1],
+                    linewidth=width,
+                    color=['blue' for _ in nodes_per_beam],
                     zorder=1
                 )
 
-            self.my_ax.add_collection(lc)
+            self.my_ax.add_line(line)
 
 
             # plots beam names on beams

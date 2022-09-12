@@ -28,8 +28,8 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             2e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (6, 4), # Frame grid division
-                            'x' # Frame grid additional support
+                            (12, 4), # Frame grid division
+                            'fd' # Frame grid additional support
                             )
 
 mesh.beam_height = 8e-3 # z thickenss (fixed)
@@ -41,7 +41,7 @@ mesh.set_width_array(
         np.shape(
             mesh.beam_array
         )[0]
-    ) * 10e-3
+    ) * 5e-3
 )
 
 # Remove unwanted beams (removes beam inside of polygon)
@@ -61,7 +61,7 @@ used_beams = [
 
 # Referent volume calculation
 w = np.full(mesh.beam_array.shape[0], 0, dtype=float)
-w[used_beams] = 10e-3
+w[used_beams] = 5e-3
 mesh.set_width_array(w)
 max_volume = mesh.calculate_mechanism_volume()
 
@@ -189,7 +189,7 @@ dims = np.size(used_beams)
 optimizer = GGS()
 optimizer.dimensions = dims
 optimizer.lb = 0 * 1e-3
-optimizer.ub = 10 * 1e-3
+optimizer.ub = 5 * 1e-3
 optimizer.iterations = 500
 optimizer.maximum_evaluations = 200000
 
@@ -312,8 +312,8 @@ def post_iteration_processing(it, candidates, best):
     return
 
 if True:
-    ub_perc = float(sys.argv[2]) / float(sys.argv[1])
-    x0 = np.full(optimizer.dimensions, optimizer.ub * ub_perc)
+    # ub_perc = float(sys.argv[2]) / float(sys.argv[1])
+    # x0 = np.full(optimizer.dimensions, optimizer.ub * ub_perc)
     optimizer.X0 = x0
     optimizer.post_iteration_processing = post_iteration_processing
     results = optimizer.optimize()
