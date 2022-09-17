@@ -207,8 +207,6 @@ optimizer.params['n'] = 101
 optimizer.params['k_max'] = 2
 
 optimizer.eval_fail_behavior = 'ignore'
-# optimizer.eval_retry_attempts = 10
-# optimizer.eval_retry_recede = 0.05
 
 optimizer.number_of_processes = 'maximum'
 

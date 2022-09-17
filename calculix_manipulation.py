@@ -393,7 +393,8 @@ class calculix_manipulator():
 
     def load_from_info(self,
                        widths_size=None,
-                       include_height=False):
+                       include_height=False,
+                       log_txt_location='ccx_files'):
 
         if widths_size is None:
             self.calculated_widths = np.empty(
@@ -413,7 +414,7 @@ class calculix_manipulator():
         with open(
                 os.path.join(
                     os.getcwd(),
-                    'ccx_files',
+                    log_txt_location,
                     'log.txt'
                 ),
         ) as log_file:
@@ -447,8 +448,10 @@ class calculix_manipulator():
                 )
 
     def load_best_ccx_solutions(
-            self
+            self,
+            best_it_location='ccx_files'
     ):
+        ''''''
         self.translate_mesh()
         self.calculated_displacement = np.empty((0, self.used_mesh.node_array.shape[0], 2),
                                                 dtype=float)
@@ -460,7 +463,7 @@ class calculix_manipulator():
         for directory in os.listdir(
                 os.path.join(
                     os.getcwd(),
-                    'ccx_files'
+                    best_it_location
                 )
         ):
             if not directory.startswith('best_it'):
