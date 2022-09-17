@@ -159,7 +159,7 @@ optimizer.forward_unique_str = True
 # optimizer.monitoring = 'dashboard'
 optimizer.monitoring = 'basic'
 
-optimizer.params['swarm_size'] = 100 # number of PSO particles; default swarm_size=dimensions
+optimizer.params['swarm_size'] = 9 # number of PSO particles; default swarm_size=dimensions
 optimizer.params['inertia'] = 0.8 # PSO parameter known as inertia weight w (should range from 0.5 to 1.0), the other available options are 'LDIW' (w linearly decreasing from 1.0 to 0.4) and 'anakatabatic'; default inertia=0.72
 optimizer.params['cognitive_rate'] = 1.0 # PSO parameter also known as c1 (should range from 0.0 to 2.0); default cognitive_rate=1.0
 optimizer.params['social_rate'] = 1.0 # PSO parameter also known as c2 (should range from 0.0 to 2.0); default social_rate=1.0
@@ -179,6 +179,7 @@ x0 = x0_cases[:, x0_cases.sum(axis=0) > 0]
 drawer = cv.mesh_drawer()
 drawer.from_object(kljesta_mesh.used_mesh)
 
+test_dir = 'ccx_files'
 def post_iteration_processing(it, candidates, best):
     if candidates[0] <= best:
         # Keeping only overall best solution
@@ -220,7 +221,7 @@ def post_iteration_processing(it, candidates, best):
         }
 
         w = np.full(kljesta_mesh.used_mesh.beam_array.shape[0], 0, dtype=float)
-        w[used_beams] = candidates[0].X
+        w[new_used_beams] = candidates[0].X
         kljesta_mesh.used_mesh.set_width_array(w)
 
         drawer.make_drawing(kljesta_info,
