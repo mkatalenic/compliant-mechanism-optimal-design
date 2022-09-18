@@ -362,10 +362,10 @@ class calculix_manipulator():
                 von_mises_instead_of_principal: bool = True):
 
         # Bura ccx
-        # ccx_name = 'ccx_2.19'
+        ccx_name = 'ccx_2.19'
 
         # Home ccx
-        ccx_name = 'ccx'
+        # ccx_name = 'ccx'
 
         ccx_file_path = self.write_to_input_file(ccx_case_name)
 

@@ -28,7 +28,7 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             2e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (12, 4), # Frame grid division
+                            (6, 4), # Frame grid division
                             'fd' # Frame grid additional support
                             )
 
@@ -190,7 +190,7 @@ optimizer = GGS()
 optimizer.dimensions = dims
 optimizer.lb = 0 * 1e-3
 optimizer.ub = 5 * 1e-3
-optimizer.iterations = 500
+optimizer.iterations = 1000
 optimizer.maximum_evaluations = 200000
 
 optimizer.evaluation_function = min_fun

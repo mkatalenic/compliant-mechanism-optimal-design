@@ -159,10 +159,10 @@ optimizer.forward_unique_str = True
 # optimizer.monitoring = 'dashboard'
 optimizer.monitoring = 'basic'
 
-optimizer.params['swarm_size'] = 9 # number of PSO particles; default swarm_size=dimensions
-optimizer.params['inertia'] = 0.8 # PSO parameter known as inertia weight w (should range from 0.5 to 1.0), the other available options are 'LDIW' (w linearly decreasing from 1.0 to 0.4) and 'anakatabatic'; default inertia=0.72
-optimizer.params['cognitive_rate'] = 1.0 # PSO parameter also known as c1 (should range from 0.0 to 2.0); default cognitive_rate=1.0
-optimizer.params['social_rate'] = 1.0 # PSO parameter also known as c2 (should range from 0.0 to 2.0); default social_rate=1.0
+# optimizer.params['swarm_size'] = 9 # number of PSO particles; default swarm_size=dimensions
+# optimizer.params['inertia'] = 0.8 # PSO parameter known as inertia weight w (should range from 0.5 to 1.0), the other available options are 'LDIW' (w linearly decreasing from 1.0 to 0.4) and 'anakatabatic'; default inertia=0.72
+# optimizer.params['cognitive_rate'] = 1.0 # PSO parameter also known as c1 (should range from 0.0 to 2.0); default cognitive_rate=1.0
+# optimizer.params['social_rate'] = 1.0 # PSO parameter also known as c2 (should range from 0.0 to 2.0); default social_rate=1.0
 
 # valid = False
 # while not valid:
