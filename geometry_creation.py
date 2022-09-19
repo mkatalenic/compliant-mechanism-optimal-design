@@ -65,6 +65,9 @@ class Mesh():
                 self.non_removable_nodes,
                 current_node_index
             )
+            self.non_removable_nodes = np.unique(
+                self.non_removable_nodes
+            )
 
         if main_node:
             self.main_nodes = np.append(
@@ -79,6 +82,9 @@ class Mesh():
         self.non_removable_nodes = np.append(
             self.non_removable_nodes,
             node
+        )
+        self.non_removable_nodes = np.unique(
+            self.non_removable_nodes
         )
 
     '''
@@ -395,33 +401,40 @@ class Mesh():
         Sets mesh beam widths
         '''
         remove_beams = self.beam_array[input_width < self.minimal_beam_width]
+        non_zero_beams = self.beam_array[input_width >= self.minimal_beam_width]
+
+        remove_beams_idx = np.arange(self.beam_array.shape[0])[input_width < self.minimal_beam_width]
+        non_zero_beams_idx = np.arange(self.beam_array.shape[0])[input_width >= self.minimal_beam_width]
 
         remove_nodes = np.empty((0),
                                 dtype=np.int32)
+        left_nodes = np.empty((0),
+                              dtype=np.int32)
 
-        for i, beam in enumerate(self.beam_array):
-            if beam in remove_beams:
-                remove_nodes = np.append(
-                    remove_nodes,
-                    beam[:-1]
-                )
-                mid_nodes = self.beam_mid_nodes_array[
-                    np.sum(self.beam_array[:i, -1]):
-                    np.sum(self.beam_array[:i, -1]) + beam[-1]
-                ]
-                remove_nodes = np.append(
-                    remove_nodes,
-                    mid_nodes
-                )
-
+        for beam in remove_beams_idx:
+            remove_nodes = np.append(
+                remove_nodes,
+                self._fetch_beam_nodes(beam)
+            )
+        for beam in non_zero_beams_idx:
+            left_nodes = np.append(
+                left_nodes,
+                self._fetch_beam_nodes(beam)
+            )
         remove_nodes = np.unique(remove_nodes)
+        left_nodes = np.unique(left_nodes)
 
         if np.size(
                 np.intersect1d(
                     remove_nodes,
                     self.non_removable_nodes
                 )
-        ) != 0:
+        ) != 0 and np.size(
+            np.intersect1d(
+                left_nodes,
+                self.non_removable_nodes
+            )
+        ) != self.non_removable_nodes.size:
             return False  # Width assign terminated unsucessfully
 
         self.beam_width_array = input_width
