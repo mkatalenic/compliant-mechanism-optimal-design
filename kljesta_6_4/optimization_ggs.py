@@ -28,8 +28,8 @@ mesh = gc.SimpleMeshCreator((2.980e9, 0.2), # Young modulus, Poisson
                             2e-3, # Maximum element size
                             100e-3, # Domain width
                             25e-3, # Domain height
-                            (6, 4), # Frame grid division
-                            'fd' # Frame grid additional support
+                            (12, 4) # Frame grid division
+                            # 'fd' # Frame grid additional support
                             )
 
 mesh.beam_height = 8e-3 # z thickenss (fixed)
@@ -212,7 +212,7 @@ optimizer.number_of_processes = 'maximum'
 
 optimizer.forward_unique_str = True
 # optimizer.monitoring = 'dashboard'
-optimizer.monitoring = 'basic'
+# optimizer.monitoring = 'basic'
 
 
 valid = False

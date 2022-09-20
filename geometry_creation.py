@@ -424,17 +424,19 @@ class Mesh():
         remove_nodes = np.unique(remove_nodes)
         left_nodes = np.unique(left_nodes)
 
+        # wrong_nodes_removed = np.size(
+            # np.intersect1d(
+                # remove_nodes,
+                # self.non_removable_nodes
+            # )
+        # )
+
         if np.size(
-                np.intersect1d(
-                    remove_nodes,
-                    self.non_removable_nodes
-                )
-        ) != 0 and np.size(
             np.intersect1d(
                 left_nodes,
                 self.non_removable_nodes
             )
-        ) != self.non_removable_nodes.size:
+        ) != np.unique(self.non_removable_nodes).size:
             return False  # Width assign terminated unsucessfully
 
         self.beam_width_array = input_width
