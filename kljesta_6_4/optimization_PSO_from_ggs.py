@@ -15,6 +15,7 @@ import geometry_creation as gc
 import calculix_manipulation as cm
 import case_visualisation as cv
 
+# skopirani mesh_setup.pkl od 10_5
 kljesta_mesh = cm.calculix_manipulator(
     gc.read_mesh_state()
 )
@@ -45,7 +46,7 @@ used_beams = np.array([
 
 x0_cases = np.empty((0, used_beams.size))
 
-for case in range(1,10):
+for case in range(1,11):
 
     kljesta_mesh.load_from_info(
         used_beams.size,
@@ -63,8 +64,10 @@ for case in range(1,10):
     kljesta_mesh.load_best_ccx_solutions(best_it_location=f'ccx_files_{case}')
 
 new_used_beams = used_beams[
-    [x0_cases.sum(axis=0)[beam] > 0 for beam in range(used_beams.size)]
+    [np.average(x0_cases, axis=0)[beam] > kljesta_mesh.used_mesh.minimal_beam_width
+     for beam in range(used_beams.size)]
 ]
+
 
 # Referent volume calculation
 w = np.full(kljesta_mesh.used_mesh.beam_array.shape[0], 0, dtype=float)
@@ -86,11 +89,9 @@ def min_fun(beam_widths, unique_str=None, debug=False):
         )
     else:
         ccx_results = False
-        print('rez_krepo')
 
 
     if ccx_results:
-        print('rez_postignut')
         volume = kljesta_mesh.used_mesh.calculate_mechanism_volume() / max_volume
 
         displacement, vm_stress = ccx_results
@@ -166,7 +167,7 @@ optimizer.monitoring = 'basic'
 
 # valid = False
 # while not valid:
-x0 = x0_cases[:, x0_cases.sum(axis=0) > 0]
+x0 = x0_cases[:, np.average(x0_cases, axis=0) > kljesta_mesh.used_mesh.minimal_beam_width]
     # x0 = optimizer.lb + np.random.random(dims) * (optimizer.ub - optimizer.lb)
     # x0[129] = 0
     #x0 = np.random.random(dims) * 4e-3 + 1.8e-3
