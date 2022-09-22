@@ -68,7 +68,6 @@ new_used_beams = used_beams[
      for beam in range(used_beams.size)]
 ]
 
-
 # Referent volume calculation
 w = np.full(kljesta_mesh.used_mesh.beam_array.shape[0], 0, dtype=float)
 w[new_used_beams] = 5e-3
@@ -138,7 +137,7 @@ def min_fun(beam_widths, unique_str=None, debug=False):
         return np.nan, np.nan, np.nan, np.nan, 1, 0
 
 dims = new_used_beams.size
-optimizer = PSO()
+optimizer = FWA()
 optimizer.dimensions = dims
 optimizer.lb = 0 * 1e-3
 optimizer.ub = 5 * 1e-3

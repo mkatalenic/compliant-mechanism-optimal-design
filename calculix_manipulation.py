@@ -175,7 +175,7 @@ class calculix_manipulator():
         for element_set_name, width in zip(elset_name_list, widths_to_write):
             output_string += f'*beam section, elset={element_set_name},'
             output_string += 'material=mesh_material, section=rect\n'
-            output_string += f'{self.used_mesh.beam_height}, {width}\n'
+            output_string += f'{self.used_mesh.beam_height}, {width:.20f}\n'
             output_string += '0.d0,0.d0,1.d0\n'
 
         # 2D case definition
@@ -362,10 +362,10 @@ class calculix_manipulator():
                 von_mises_instead_of_principal: bool = True):
 
         # Bura ccx
-        ccx_name = 'ccx_2.19'
+        # ccx_name = 'ccx_2.19'
 
         # Home ccx
-        # ccx_name = 'ccx'
+        ccx_name = 'ccx'
 
         ccx_file_path = self.write_to_input_file(ccx_case_name)
 

@@ -1177,292 +1177,292 @@ b_96,
 *elastic, type=iso
 2980000000.0, 0.2
 *beam section, elset=b_1,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_2,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_3,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_4,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_5,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_6,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_7,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_8,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_9,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_10,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_11,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_12,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_13,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_14,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_15,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_16,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_17,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_18,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_19,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_20,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_21,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_22,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_23,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_24,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_25,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_26,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_27,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_28,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_29,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_30,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_31,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_32,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_33,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_34,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_35,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_36,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_37,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_38,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_39,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_40,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_41,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_42,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_43,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_44,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_45,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_46,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_47,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_48,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_49,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_50,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_51,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_52,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_53,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_54,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_55,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_56,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_57,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_58,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_59,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_60,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_61,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_62,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_63,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_64,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_65,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_66,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_67,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_68,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_69,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_70,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_71,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_72,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_73,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_74,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_75,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_76,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_77,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_78,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_79,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_80,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_81,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_82,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_83,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_84,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_85,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_86,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_87,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_88,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_89,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_90,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_91,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_92,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_93,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_94,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_95,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *beam section, elset=b_96,material=mesh_material, section=rect
-0.008, 0.0025
+0.008, 0.005
 0.d0,0.d0,1.d0
 *boundary
 1, 3,5

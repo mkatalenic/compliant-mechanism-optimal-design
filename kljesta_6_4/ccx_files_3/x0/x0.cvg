@@ -2,5 +2,5 @@ SUMMARY OF C0NVERGENCE INFORMATION
   STEP   INC  ATT   ITER     CONT.   RESID.        CORR.      RESID.      CORR.
                               EL.    FORCE         DISP       FLUX        TEMP.
                               (#)     (%)           (%)        (%)         (%)
-     1     1     1     1        0  0.5705E+02  0.1000E+03  0.0000E+00  0.0000E+00
-     1     1     1     2        0  0.1320E-02  0.2562E+00  0.0000E+00  0.0000E+00
+     1     1     1     1        0  0.3717E+03  0.1000E+03  0.0000E+00  0.0000E+00
+     1     1     1     2        0  0.9775E-01  0.9800E+00  0.0000E+00  0.0000E+00
