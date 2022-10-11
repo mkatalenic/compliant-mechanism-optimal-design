@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 
-#SBATCH --job-name=PSO_kljesta
+#SBATCH --job-name=BA_kljesta
 #SBATCH --partition=computes_thin
 #SBATCH -n 1
 #SBATCH --ntasks=48
 
-out_name='kljesta_PSO'
+out_name='kljesta_BA'
 cd $out_name || exit
 
 python optimization.py
