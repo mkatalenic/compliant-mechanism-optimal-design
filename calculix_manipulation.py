@@ -118,15 +118,24 @@ def read_ccx_results(
             )
 
         if von_mises:
-            sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_xz = [
-                stress_array[-no_of_used_nodes:][i] for i in range(6)
-            ]
+            von_mises_eq_stress_array = np.empty((0), dtype=float)
+            for stress_per_node in stress_array[-no_of_used_nodes:]:
+                sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_xz = [
+                    stress_per_node[i] for i in range(6)
+                ]
 
-            von_mises_eq_stress = calculate_von_mises_stress(
-                Stress(sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_xz)
+                von_mises_eq_stress = calculate_von_mises_stress(
+                    Stress(sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_xz)
+                )
+
+                von_mises_eq_stress_array = np.append(
+                    von_mises_eq_stress_array, von_mises_eq_stress
+                )
+
+            return (
+                displacement_array[:, :-1][-no_of_used_nodes:],
+                von_mises_eq_stress_array,
             )
-
-            return (displacement_array[:, :-1][-no_of_used_nodes:], von_mises_eq_stress)
 
         else:
             return (
@@ -145,10 +154,10 @@ def run_ccx(
     ccx_file_path = os.path.join(os.getcwd(), "ccx_files", ccx_case_name)
 
     # Bura ccx
-    ccx_name = "ccx_2.19"
+    # ccx_name = "ccx_2.19"
 
     # Home ccx
-    # ccx_name = "ccx"
+    ccx_name = "ccx"
 
     write_to_ccx_input_file(mesh, ccx_case_name)
 

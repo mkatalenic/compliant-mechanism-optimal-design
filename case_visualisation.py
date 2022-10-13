@@ -17,11 +17,8 @@ import matplotlib.colors as colors
 import matplotlib.cm as cmx
 
 import geometry_creation as gc
-import calculix_manipulation as cm
 
 from matplotlib.lines import Line2D
-
-from my_typing import Stress
 
 
 class LineDataUnits(Line2D):
@@ -131,7 +128,7 @@ class mesh_drawer:
         self,
         info_dict: dict,
         displacement: np.ndarray,
-        stress: np.ndarray,
+        von_mises_stress: np.ndarray,
         used_nodes_idx: np.ndarray,
         stress_max_min: tuple[float, float],
         displacement_scale: int = 1,
@@ -224,9 +221,7 @@ class mesh_drawer:
             cb.set_label("VonMisses stress [MPa]")
 
         all_nodes_stress = np.zeros(self.used_mesh.node_array.shape[0])
-        all_nodes_stress[used_nodes] += cm.calculate_von_mises_stress(
-            Stress(stress[0], stress[1], stress[2], stress[3], stress[4], stress[5])
-        )
+        all_nodes_stress[used_nodes] += von_mises_stress
 
         all_nodes_coordinates = np.zeros_like(self.used_mesh.node_array)
         all_nodes_coordinates[used_nodes] = displacement * displacement_scale
@@ -238,7 +233,7 @@ class mesh_drawer:
 
             nodes_per_beam = self.used_mesh._fetch_beam_nodes(beam)
 
-            if stress is not None:
+            if von_mises_stress is not None:
                 line = LineDataUnits(
                     all_nodes_coordinates[nodes_per_beam][:, 0],
                     all_nodes_coordinates[nodes_per_beam][:, 1],

@@ -9,7 +9,6 @@ import mesh_setup
 
 mesh_setup.create_and_write_mesh()
 
-
 from optimization_configuration import (
     OPTIMIZATION_DIMENSIONS,
     OPTIMIZATION_UPPER_BOUND,
@@ -61,7 +60,7 @@ x0 = OPTIMIZATION_STARTING_DESIGN_VECTOR
 
 optimizer.X0 = x0
 optimizer.post_iteration_processing = post_iteration_processing
-optimizer.monitoring = "dashboard"
+optimizer.monitoring = "basic"
 results = optimizer.optimize()
 print(results)
 

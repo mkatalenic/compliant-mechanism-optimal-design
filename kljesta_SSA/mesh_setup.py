@@ -17,16 +17,10 @@ from my_typing import (
 
 MAXIMAL_BEAM_WIDTH = 5e-3
 
-# kljesta_mesh = gc.simple_mesh_creator(
-#     material=Material(2.980e9, 0.2),
-#     max_el_size=2e-3,
-#     dimensions=MeshDimensions(100e-3, 25e-3, 12, 4),
-#     support_definition="fd",
-# )
 kljesta_mesh = gc.simple_mesh_creator(
     material=Material(2.980e9, 0.2),
     max_el_size=2e-3,
-    dimensions=MeshDimensions(100e-3, 25e-3, 6, 4),
+    dimensions=MeshDimensions(100e-3, 25e-3, 12, 4),
     support_definition="fd",
 )
 
