@@ -42,7 +42,7 @@ OPTIMIZATION_OBJECTIVES_AND_WEIGHTS = {
 
 OPTIMIZATION_CONSTRAINTS_LABELS = ["invalid_simulation", "stress"]
 OPTIMIZER_SPECIFIC_PARAMETERS = {
-    "bat_swarm_size": 15,
+    "bat_swarm_size": OPTIMIZATION_DIMENSIONS,
     "loudness": 1,
     "pulse_rate": 0.001,
     "alpha": 0.9,
@@ -192,7 +192,11 @@ def post_iteration_processing(it, candidates, best):
 
     # Remove candidates' directories
     for c in candidates:
-        shutil.rmtree(f"{TEST_DIR}/{c.unique_str}")
+        if os.path.exists(f"{TEST_DIR}/{c.unique_str}"):
+            try:
+                shutil.rmtree(f"{TEST_DIR}/{c.unique_str}")
+            except:
+                pass
 
     return
 

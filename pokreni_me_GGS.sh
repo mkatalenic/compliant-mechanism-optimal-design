@@ -8,7 +8,7 @@
 out_name='kljesta_GGS'
 cd $out_name || exit
 
-python optimization.py
+python3.9 optimization.py
 
 cd ..
 

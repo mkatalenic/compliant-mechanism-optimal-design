@@ -189,7 +189,11 @@ def post_iteration_processing(it, candidates, best):
 
     # Remove candidates' directories
     for c in candidates:
-        shutil.rmtree(f"{TEST_DIR}/{c.unique_str}")
+        if os.path.exists(f"{TEST_DIR}/{c.unique_str}"):
+            try:
+                shutil.rmtree(f"{TEST_DIR}/{c.unique_str}")
+            except:
+                pass
 
     return
 

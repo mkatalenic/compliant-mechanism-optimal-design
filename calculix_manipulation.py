@@ -154,10 +154,10 @@ def run_ccx(
     ccx_file_path = os.path.join(os.getcwd(), "ccx_files", ccx_case_name)
 
     # Bura ccx
-    # ccx_name = "ccx_2.19"
+    ccx_name = "ccx_2.19"
 
     # Home ccx
-    ccx_name = "ccx"
+    # ccx_name = "ccx"
 
     write_to_ccx_input_file(mesh, ccx_case_name)
 
