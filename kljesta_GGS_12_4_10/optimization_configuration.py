@@ -27,6 +27,7 @@ kljesta_mesh: Mesh = read_mesh_state()
 MAXIMAL_MESH_VOLUME = kljesta_mesh.calculate_mechanism_volume()
 
 # Optimization parameters
+OPTIMIZATOR_NAME = "GGS"
 OPTIMIZATION_DIMENSIONS = len(
     [state for state in kljesta_mesh.beam_width_beginning_map if state == True]
 )

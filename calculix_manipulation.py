@@ -149,15 +149,10 @@ def run_ccx(
     ccx_case_name: str,
     delete_after_completion: bool = False,
     von_mises_instead_of_principal: bool = True,
+    ccx_name: str = "ccx",
 ) -> tuple[np.ndarray, np.ndarray] | None:
     """Runs ccx and fetches results using read_results()"""
     ccx_file_path = os.path.join(os.getcwd(), "ccx_files", ccx_case_name)
-
-    # Bura ccx
-    ccx_name = "ccx_2.19"
-
-    # Home ccx
-    # ccx_name = "ccx"
 
     write_to_ccx_input_file(mesh, ccx_case_name)
 
