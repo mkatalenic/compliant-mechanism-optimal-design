@@ -4,12 +4,10 @@ import shutil
 import os
 import sys
 
-from pyparsing import OpAssoc
-
 
 import matplotlib.pyplot as plt
 
-from indago import GGS, PSO, SSA, BA, FWA, MRFO
+from indago import GGS, PSO, SSA, BA, FWA, MRFO, DE
 
 
 class OptimFactory:
@@ -18,6 +16,7 @@ class OptimFactory:
         self.PSO = PSO()
         self.SSA = SSA()
         self.BA = BA()
+        self.DE = DE()
         self.FWA = FWA()
         self.MRFO = MRFO()
 
@@ -53,6 +52,7 @@ if __name__ == "__main__":
         OPTIMIZATOR_NAME,
         OPTIMIZATION_DIMENSIONS,
         OPTIMIZATION_UPPER_BOUND,
+        OPTIMIZATION_LOWER_BOUND,
         OPTIMIZATION_ITERATIONS,
         OPTIMIZATION_MAXIMUM_EVALUATIONS,
         OPTIMIZATION_OBJECTIVES_AND_WEIGHTS,
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     optim_setup = {
         "dimensions": OPTIMIZATION_DIMENSIONS,
-        "lb": 0,
+        "lb": OPTIMIZATION_LOWER_BOUND,
         "ub": OPTIMIZATION_UPPER_BOUND,
         "iterations": OPTIMIZATION_ITERATIONS,
         "maximum_evaluations": OPTIMIZATION_MAXIMUM_EVALUATIONS,
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         "forward_unique_str": True,
         "X0": OPTIMIZATION_STARTING_DESIGN_VECTOR,
         "post_iteration_processing": post_iteration_processing,
-        "monitoring": "basic",
+        "monitoring": "dashboard",
     }
 
     if OPTIMIZATOR_NAME in OF.__dict__.keys():

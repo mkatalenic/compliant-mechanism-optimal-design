@@ -181,11 +181,46 @@ def run_ccx(
         return results  # U slučaju uspješne analize
 
 
-def load_from_info(
+def load_optimization_results_from_info(
+        mesh: Mesh,
+        log_txt_location: str = "ccx_files",
+        log_name: str = 'log.txt'
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    '''Load fitness from log file'''
+
+    fitness_in_iterations = np.empty((0), dtype=float)
+
+    with open(
+        os.path.join(os.getcwd(), log_txt_location, log_name),
+    ) as log_file:
+        first_line = True
+        for case in log_file:
+            fitness_of_current_iteration = float(case[
+                case.find('fitness:')+len('fitness:'):
+            ])
+            fitness_in_iterations = np.append(fitness_in_iterations, fitness_of_current_iteration)
+
+            res = re.findall(r"\[([^\]]*)\]", case)
+            objectives_in_current_iteration = np.array([res[1].split(", ")], dtype=float)
+            constraints_in_current_iteration = np.array([res[2].split(", ")], dtype=float)
+
+            if first_line:
+                objectives_in_iterations = np.empty((0, objectives_in_current_iteration.size), dtype=float)
+                constraints_in_iterations = np.empty((0, constraints_in_current_iteration.size), dtype=float)
+                first_line = False
+
+            objectives_in_iterations = np.append(objectives_in_iterations, objectives_in_current_iteration, axis=0)
+            constraints_in_iterations = np.append(constraints_in_iterations, constraints_in_current_iteration, axis=0)
+
+    return objectives_in_iterations, constraints_in_iterations, fitness_in_iterations
+
+
+def load_widths_from_info(
     mesh: Mesh,
     widths_size: int | None = None,
     include_height: bool = False,
     log_txt_location: str = "ccx_files",
+    log_name: str = 'log.txt'
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | tuple[np.ndarray, np.ndarray]:
     """Loads results from the log"""
 
@@ -193,12 +228,12 @@ def load_from_info(
     iteration_list = np.empty(0, dtype=float)
 
     if widths_size is None:
-        calculated_widths = np.empty((0, mesh.beam_width_array.shape[1]))
+        calculated_widths = np.empty((0, sum(mesh.beam_width_beginning_map)))
     else:
         calculated_widths = np.empty((0, widths_size), dtype=float)
 
     with open(
-        os.path.join(os.getcwd(), log_txt_location, "log.txt"),
+        os.path.join(os.getcwd(), log_txt_location, log_name),
     ) as log_file:
         for case in log_file:
             iteration_list = np.append(iteration_list, int(case.split()[0]))

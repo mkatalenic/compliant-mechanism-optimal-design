@@ -20,33 +20,64 @@ from helper_functions import (
     final_displacement_node_positions_in_ccx_results,
 )
 
+import geometry_creation as gc
 from geometry_creation import read_mesh_state, Mesh
+from mesh_setup import MAXIMAL_MESH_VOLUME, MAXIMAL_BEAM_WIDTH
+
+def beam_position_converter(
+        mesh: gc.Mesh,
+        beams_to_find: list,
+) -> list:
+
+    used_beams = [idx for idx, exists in enumerate(mesh.beam_width_beginning_map) if exists]
+    new_positions = [new_idx for new_idx, beam_idx in enumerate(used_beams) if beam_idx in beams_to_find]
+
+    return new_positions
 
 # Read initial mesh setup
-kljesta_mesh: Mesh = read_mesh_state()
-MAXIMAL_MESH_VOLUME = kljesta_mesh.calculate_mechanism_volume()
+used_mesh: Mesh = read_mesh_state('mesh_setup.pkl')
 
 # Optimization parameters
-OPTIMIZATOR_NAME = "GGS"
+OPTIMIZATOR_NAME = "FWA"
 OPTIMIZATION_DIMENSIONS = len(
-    [state for state in kljesta_mesh.beam_width_beginning_map if state == True]
+    [state for state in used_mesh.beam_width_beginning_map if state == True]
 )
-OPTIMIZATION_UPPER_BOUND = 5e-3  # mm
-OPTIMIZATION_ITERATIONS = 1500
+OPTIMIZATION_UPPER_BOUND = 3e-3  # mm
+OPTIMIZATION_ITERATIONS = 1000
 OPTIMIZATION_MAXIMUM_EVALUATIONS = 200000
 OPTIMIZATION_OBJECTIVES_AND_WEIGHTS = {
-    "volume": 1e-2,
-    "x_error": 1e-3,
-    "y_error": 1,
-    "y_error_difference": 1e-1,
+    "volume": 1e-3,
+    "x_error": 0.2,
+    "y_error": 0.8,
 }
 
 OPTIMIZATION_CONSTRAINTS_LABELS = ["invalid_simulation", "stress"]
-OPTIMIZER_SPECIFIC_PARAMETERS = {"n": 101, "k_max": 2}
-OPTIMIZATION_STARTING_DESIGN_VECTOR = np.full(
-    OPTIMIZATION_DIMENSIONS, 10e-2 * OPTIMIZATION_UPPER_BOUND
-)
-FAILED_OPTIMIZATION_RETURN = (np.nan, np.nan, np.nan, np.nan, 1, np.nan)
+OPTIMIZER_SPECIFIC_PARAMETERS = {
+    'n': OPTIMIZATION_DIMENSIONS,
+    'm1': 10,
+    'm2': 10,
+}
+
+from mesh_setup import BEGINNING_DESIGN_VECTOR, BEAM_INTERFACE
+
+OPTIMIZATION_STARTING_DESIGN_VECTOR = BEGINNING_DESIGN_VECTOR
+FAILED_OPTIMIZATION_RETURN = (np.nan, np.nan, np.nan, 1, np.nan)
+
+bm_counter = -1
+beam_interface_positions = np.empty((0), dtype=int)
+for beam_idx, beginning_map in enumerate(used_mesh.beam_width_beginning_map):
+    if beginning_map == True:
+        bm_counter +=1
+    if beam_idx in BEAM_INTERFACE:
+        beam_interface_positions = np.append(beam_interface_positions, beam_idx)
+
+new_beam_interface_positions = beam_position_converter(used_mesh, beam_interface_positions)
+
+
+OPTIMIZATION_UPPER_BOUND = np.full((OPTIMIZATION_DIMENSIONS), MAXIMAL_BEAM_WIDTH)  # mm
+OPTIMIZATION_UPPER_BOUND[new_beam_interface_positions] = MAXIMAL_BEAM_WIDTH
+OPTIMIZATION_LOWER_BOUND = np.full((OPTIMIZATION_DIMENSIONS), 0.)
+OPTIMIZATION_LOWER_BOUND[new_beam_interface_positions] = MAXIMAL_BEAM_WIDTH
 
 
 def minimization_function(beam_widths, unique_str="", debug=False):
@@ -55,14 +86,15 @@ def minimization_function(beam_widths, unique_str="", debug=False):
 
     ccx_results: tuple[np.ndarray, np.ndarray] | bool
 
-    if kljesta_mesh.set_width_array(beam_widths) is False:
+    if used_mesh.set_width_array(beam_widths) is False:
         return FAILED_OPTIMIZATION_RETURN
     else:
         results = run_ccx(
-            mesh=kljesta_mesh,
+            mesh=used_mesh,
             ccx_case_name=unique_str,
             delete_after_completion=False,
             von_mises_instead_of_principal=True,
+            ccx_name='ccx'
         )
 
         if results is None:
@@ -74,20 +106,16 @@ def minimization_function(beam_widths, unique_str="", debug=False):
                 f"ccx_files/{unique_str}/data.npz",
                 displacement=displacement,
                 stress=stress,
-                used_nodes_read=used_nodes_in_current_mesh_state(kljesta_mesh),
+                used_nodes_read=used_nodes_in_current_mesh_state(used_mesh),
             )
-            current_volume = kljesta_mesh.calculate_mechanism_volume()
+            current_volume = used_mesh.calculate_mechanism_volume()
             non_dim_volume = current_volume / MAXIMAL_MESH_VOLUME
 
-            u_goal = kljesta_mesh.final_displacement_array[:, 1:]
+            u_goal = used_mesh.final_displacement_array[:, 1:]
             u_calc = displacement[
-                final_displacement_node_positions_in_ccx_results(kljesta_mesh)
+                final_displacement_node_positions_in_ccx_results(used_mesh)
             ]
             error = u_calc - u_goal
-
-            y_error_difference = np.abs(error[0, 1] - error[1, 1]) / np.average(
-                np.abs(u_goal[:, 1])
-            )
 
             mask = np.abs(u_goal) > 0
             error[mask] = error[mask] / u_goal[mask]
@@ -105,22 +133,21 @@ def minimization_function(beam_widths, unique_str="", debug=False):
                 print(f"{mask=}")
                 print(f"{displacement=}")
                 print(
-                    f"{final_displacement_node_positions_in_ccx_results(kljesta_mesh)=}"
+                    f"{final_displacement_node_positions_in_ccx_results(used_mesh)=}"
                 )
 
         return (
             non_dim_volume,
             x_error,
             y_error,
-            y_error_difference,
             0,
             stress_constraint,
         )
 
 
 # postavke animacije
-drawer = cv.mesh_drawer()
-drawer.from_object(kljesta_mesh)
+drawer = cv.mesh_drawer(used_for_printig=True)
+drawer.from_object(used_mesh)
 
 TEST_DIR = "./ccx_files"
 
@@ -151,16 +178,15 @@ def post_iteration_processing(it, candidates, best):
 
         kljesta_info = {
             "Iteracija": int(it),
-            "h " + "[m]": f"{kljesta_mesh.beam_height:.5E}",
+            "h " + "[m]": f"{used_mesh.beam_height:.5E}",
             "Volumen": f"{candidates[0].O[0]*100:.2f}%",
             "x error": f"{candidates[0].O[1]*100:.2f}%",
             "y error": f"{candidates[0].O[2]*100:.2f}%",
-            "y error difference": f"{candidates[0].O[3]*100:.2f}%",
         }
 
-        # w = np.full(kljesta_mesh.beam_array.shape[0], 0, dtype=float)
-        # w[used_nodes_in_current_mesh_state(kljesta_mesh)] = candidates[0].X
-        kljesta_mesh.set_width_array(candidates[0].X)
+        # w = np.full(used_mesh.beam_array.shape[0], 0, dtype=float)
+        # w[used_nodes_in_current_mesh_state(used_mesh)] = candidates[0].X
+        used_mesh.set_width_array(candidates[0].X)
 
         drawer.make_drawing(
             kljesta_info,
@@ -173,7 +199,7 @@ def post_iteration_processing(it, candidates, best):
         )
 
         drawer.plot_obj_constr_fitness(
-            it, candidates[0].O, candidates[0].C, candidates[0].f
+            it, candidates[0].O, candidates[0].C, candidates[0].f, ['volumen', 'x error', 'y error']
         )
 
         drawer.save_drawing(f"best_{it}")
@@ -196,5 +222,5 @@ def post_iteration_processing(it, candidates, best):
 
 
 if __name__ == "__main__":
-    print(type(kljesta_mesh.beam_width_array))
-    print([kljesta_mesh.beam_width_array > 0.0])
+    print(type(used_mesh.beam_width_array))
+    print([used_mesh.beam_width_array > 0.0])

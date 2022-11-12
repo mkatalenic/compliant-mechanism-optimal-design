@@ -259,18 +259,24 @@ class Mesh:
 
         return np.insert(out_nodes, 1, beam_mid_nodes)
 
-    def beam_laso(self, polygon_points: list) -> np.ndarray:
+    def beam_laso(self, polygon_points: list, only_main_nodes: bool=False) -> np.ndarray:
         """
         Ouputs a list of beam ids
         """
 
-        cought_nodes = self.node_laso(poly_points=polygon_points, only_main_nodes=False)
+        cought_nodes = self.node_laso(poly_points=polygon_points, only_main_nodes=only_main_nodes)
         cought_beams = np.empty(shape=(0), dtype=int)
 
-        for beam in range(self.beam_array.shape[0]):
-            nodes_in_beam = self._fetch_beam_nodes(beam)
-            if any(np.in1d(nodes_in_beam, cought_nodes)):
-                cought_beams = np.append(cought_beams, beam)
+        if only_main_nodes:
+            for beam in range(self.beam_array.shape[0]):
+                nodes_in_beam = self._fetch_beam_nodes(beam)
+                if all(np.in1d(nodes_in_beam[[0, -1]], cought_nodes)):
+                    cought_beams = np.append(cought_beams, beam)
+        else:
+            for beam in range(self.beam_array.shape[0]):
+                nodes_in_beam = self._fetch_beam_nodes(beam)
+                if any(np.in1d(nodes_in_beam, cought_nodes)):
+                    cought_beams = np.append(cought_beams, beam)
 
         return cought_beams
 
@@ -377,6 +383,24 @@ class Mesh:
             self.beam_width_beginning_map = np.full(self.beam_array.shape[0], True)
         self.beam_width_beginning_map[removed_beams] = False
 
+    def set_widths_array_with_interface(
+            self,
+            input_width: float | np.ndarray,
+            interface_polygon_points: list,
+            interface_width: float
+    ):
+        interface_beams = self.beam_laso(interface_polygon_points)
+        self.beam_width_beginning_map[interface_beams] = False
+        self.set_width_array(input_width)
+
+        self.beam_width_beginning_map[interface_beams] = True
+
+        self.beam_width_array[interface_beams] = interface_width
+
+        self.calculate_mechanism_volume()
+
+        return True  # Width assign terminated successfully
+
     def set_width_array(self, input_width: float | np.ndarray):
         """
         Sets mesh beam widths
@@ -438,10 +462,14 @@ class Mesh:
             pickle.dump(self, case_setup, pickle.HIGHEST_PROTOCOL)
 
 
-def read_mesh_state() -> Mesh:
+def read_mesh_state(pickled_mesh_location: str | None) -> Mesh:
     """Reads the beginning mesh state from a .pkl file"""
-    with open(os.path.join(os.getcwd(), "mesh_setup.pkl"), "rb") as case_setup:
-        return pickle.load(case_setup)
+    if pickled_mesh_location is None:
+        with open(os.path.join(os.getcwd(), "mesh_setup.pkl"), "rb") as case_setup:
+            return pickle.load(case_setup)
+    else:
+        with open(os.path.join(os.getcwd(), pickled_mesh_location), "rb") as case_setup:
+            return pickle.load(case_setup)
 
 
 def simple_mesh_creator(
@@ -498,8 +526,7 @@ def simple_mesh_creator(
                 and y_node < dimensions.heigth_divisions
                 and x_node < dimensions.length_divisions
             ):
-                mesh.create_node(
-                    np.average(
+                node_x, node_y = np.average(
                         mesh.node_array[
                             np.array(
                                 [
@@ -512,7 +539,9 @@ def simple_mesh_creator(
                             :,
                         ],
                         axis=0,
-                    ),
+                )
+                mesh.create_node(
+                    Coordinates(node_x, node_y),
                     main_node=True,
                 )
 

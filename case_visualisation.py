@@ -41,11 +41,25 @@ class LineDataUnits(Line2D):
     _linewidth = property(_get_lw, _set_lw)
 
 
-plt.style.use("dark_background")
-
-
 class mesh_drawer:
-    def __init__(self):
+    def __init__(self, used_for_printig: bool = False):
+
+        if not used_for_printig:
+            plt.style.use("dark_background")
+            self.used_colors = {
+                'undeformed_beams': 'w',
+                'final_displacement_edge': 'white',
+                'node_center': 'white',
+                'info_table_colors': ('pink', 'black')
+            }
+        elif used_for_printig:
+            plt.style.use("bmh")
+            self.used_colors = {
+                'undeformed_beams': 'b',
+                'final_displacement_edge': 'black',
+                'node_center': 'black',
+                'info_table_colors': ('pink', 'white')
+            }
         plt.rcParams["figure.constrained_layout.use"] = True
         self.my_figure = plt.figure(dpi=400, figsize=(10, 10))
         self.my_figure.suptitle("Optimizacija podatljivog mehanizma")
@@ -73,7 +87,7 @@ class mesh_drawer:
 
         self.used_mesh = mesh
 
-    def plot_obj_constr_fitness(self, iteration, objectives, constraints, fitness):
+    def plot_obj_constr_fitness(self, iteration, objectives, constraints, fitness, objective_names):
 
         if iteration == 0:
 
@@ -110,7 +124,7 @@ class mesh_drawer:
         self.my_res_ax.tick_params(axis="y")
         for obj_id in range(obj_arr.shape[1]):
             self.my_res_ax.plot(
-                it_arr, obj_arr[:, obj_id], color=obj_colors[obj_id], label=f"O{obj_id}"
+                it_arr, obj_arr[:, obj_id], color=obj_colors[obj_id], label=objective_names[obj_id]
             )
         self.my_res_ax.legend(bbox_to_anchor=(0.02, 0.02), loc="lower left")
 
@@ -144,7 +158,7 @@ class mesh_drawer:
                 text_array, np.array([[f"{key}", f"{value}"]]), axis=0
             )
 
-        cellcolours = [["purple", "black"] for _ in range(np.shape(text_array)[0])]
+        cellcolours = [[self.used_colors['info_table_colors'][0], self.used_colors['info_table_colors'][1]] for _ in range(np.shape(text_array)[0])]
 
         info_table = self.my_info_ax.table(
             cellText=text_array, loc="center", cellColours=cellcolours, edges="closed"
@@ -202,7 +216,7 @@ class mesh_drawer:
             self.my_ax.plot(
                 undeformed_node_coordinates[nodes_per_beam][:, 0],
                 undeformed_node_coordinates[nodes_per_beam][:, 1],
-                color="w",
+                color=self.used_colors['undeformed_beams'],
                 linestyle="dashdot",
                 linewidth=1,
                 alpha=0.7,
@@ -361,7 +375,7 @@ class mesh_drawer:
                     s=30,
                     color="green",
                     marker="o",
-                    edgecolor="white",
+                    edgecolor=self.used_colors['final_displacement_edge'],
                     zorder=1,
                 )
 
@@ -370,7 +384,7 @@ class mesh_drawer:
                     all_nodes_coordinates[node][0],
                     all_nodes_coordinates[node][1],
                     s=20,
-                    color="white",
+                    color=self.used_colors['node_center'],
                     marker="o",
                     edgecolor="purple",
                     zorder=1,

@@ -6,11 +6,8 @@
 #SBATCH --ntasks=48
 
 out_name='kljesta_GGS_12_4_10'
-cd $out_name || exit
 
-python3.9 optimization.py
-
-cd ..
+python3.9 optimization.py $out_name
 
 ext='.tar.gz'
 tar -cpzf $out_name$ext
